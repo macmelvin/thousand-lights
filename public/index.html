@@ -1,0 +1,774 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Thousand Lights</title>
+<meta name="description" content="A quiet 3D house of prayer. Pick your faith, lift a prayer, and others pray for you.">
+<meta property="og:title" content="Thousand Lights">
+<meta property="og:description" content="A quiet 3D house of prayer. Pick your faith, lift a prayer, and others pray for you.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#160F0B">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+img{max-width:100%}
+body{margin:0}
+/* Layout: a full-screen 3D house of prayer (one fixed world per faith) with a top bar, a bottom action bar, and slide-in panels for praying and the wall */
+:root{
+  --bg:#EEF0F6; --surface:#F9F9FD; --ink:#1D2135; --muted:#585E7C; --line:#D5D8E6;
+  --wax:#B5761A; --wax-ink:#7E520F; --wax-soft:#F6E7CC;
+  --alert-bg:#FBEDEA; --alert-ink:#8A2E1E;
+  --hall:#160F0B; --hall-ink:#F5EBDD; --hall-muted:#D3C4AE; --glass:rgba(22,15,11,.62); --glass-line:rgba(245,235,221,.18); --gold:#F5C46F;
+  --display:"Marcellus","Cinzel",Georgia,serif;
+  --body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#12142A; --surface:#1A1D37; --ink:#E9E8F2; --muted:#A0A3BF; --line:#2D3152;
+  --wax:#E2A443; --wax-ink:#F2C06B; --wax-soft:#3A3020;
+  --alert-bg:#3A2025; --alert-ink:#F4B6A8; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12142A; --surface:#1A1D37; --ink:#E9E8F2; --muted:#A0A3BF; --line:#2D3152;
+  --wax:#E2A443; --wax-ink:#F2C06B; --wax-soft:#3A3020;
+  --alert-bg:#3A2025; --alert-ink:#F4B6A8; color-scheme:dark}
+
+html,body{height:100%}
+body{background:var(--hall);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.55;overflow:hidden}
+#scene{position:fixed;inset:0;display:block;width:100%;height:100%;touch-action:none;cursor:pointer}
+select,textarea,button{font:inherit;color:inherit}
+
+.top{position:fixed;top:0;left:0;right:0;z-index:5;display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:10px;
+  padding-top:calc(12px + env(safe-area-inset-top,0px));padding-bottom:14px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  color:var(--hall-ink);pointer-events:none;background:linear-gradient(rgba(10,7,5,.72),rgba(10,7,5,0))}
+.top>*{pointer-events:auto}
+.brand h1{font-family:var(--display);font-weight:400;font-size:1.7rem;line-height:1;margin:0;letter-spacing:.02em}
+.brand p{margin:4px 0 0;font-size:.85rem;color:var(--hall-muted)}
+.stats{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:flex-end}
+.stat{background:var(--glass);border:1px solid var(--glass-line);border-radius:999px;padding:5px 12px;font-size:.85rem;font-variant-numeric:tabular-nums;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.stat b{color:var(--gold)}
+.faith{display:flex;align-items:center;gap:6px;background:var(--glass);border:1px solid var(--gold);border-radius:999px;padding:2px 4px 2px 12px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.faith label{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--hall-muted)}
+.faith select{background:transparent;border:0;color:var(--hall-ink);font-weight:700;padding:6px 8px;border-radius:999px;font-size:.92rem;cursor:pointer}
+.faith select:focus-visible{outline:2px solid var(--gold)}
+.faith option{color:#1D2135;background:#fff}
+
+.hint{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(140px + env(safe-area-inset-bottom,0px));z-index:4;color:var(--hall-ink);opacity:.8;font-size:.82rem;text-align:center;pointer-events:none;width:min(92vw,520px);text-shadow:0 1px 4px rgba(0,0,0,.8)}
+.merit{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(92px + env(safe-area-inset-bottom,0px));z-index:5;display:flex;align-items:center;gap:8px;white-space:nowrap;max-width:calc(100vw - 32px);
+  background:linear-gradient(135deg,#FFE29A,#F5B84A 45%,#E3892B);color:#2A1606;font-weight:700;font-size:1rem;text-decoration:none;border-radius:999px;padding:11px 22px;overflow:hidden;
+  border:1px solid rgba(255,245,215,.9);box-shadow:0 0 0 0 rgba(255,200,100,.7),0 0 28px 6px rgba(255,190,90,.65),0 8px 30px rgba(245,170,70,.55);animation:meritGlow 2.2s ease-in-out infinite}
+.merit::after{content:"";position:absolute;top:0;bottom:0;left:-60%;width:40%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.75),transparent);transform:skewX(-20deg);animation:shine 3.2s ease-in-out infinite}
+@keyframes meritGlow{0%,100%{box-shadow:0 0 0 0 rgba(255,210,120,.75),0 0 26px 6px rgba(255,190,90,.6),0 8px 30px rgba(245,170,70,.5)}50%{box-shadow:0 0 0 14px rgba(255,210,120,0),0 0 48px 16px rgba(255,200,100,.85),0 8px 36px rgba(245,170,70,.7)}}
+@keyframes shine{0%,55%{left:-60%}100%{left:130%}}
+.merit:hover{filter:brightness(1.08);transform:translateX(-50%) scale(1.04)}
+#shareBtn svg{filter:drop-shadow(0 0 6px rgba(255,200,100,.9))}
+#shareBtn{color:#FFE29A;font-weight:700}
+.merit:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.spark{width:10px;height:10px;border-radius:50%;background:#fff;box-shadow:0 0 10px 3px rgba(255,255,255,.8);animation:spark 2s ease-in-out infinite}
+@keyframes spark{50%{transform:scale(.6);opacity:.6}}
+@media (prefers-reduced-motion:reduce){.spark,.merit,.merit::after{animation:none}}
+@media (max-width:400px){.merit{font-size:.84rem;padding:9px 15px}}
+.toast{position:fixed;left:50%;transform:translateX(-50%);top:calc(84px + env(safe-area-inset-top,0px));z-index:7;background:var(--glass);border:1px solid var(--glass-line);color:var(--hall-ink);border-radius:999px;padding:7px 16px;font-size:.9rem;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);max-width:90vw;text-align:center}
+.place{position:fixed;left:50%;top:calc(46% + env(safe-area-inset-top,0px));transform:translate(-50%,-50%);z-index:3;pointer-events:none;text-align:center;color:#fff;transition:opacity 1.2s;text-shadow:0 2px 14px rgba(0,0,0,.85)}
+.place b{display:block;font-family:var(--display);font-weight:400;font-size:clamp(1.8rem,6vw,3rem)}
+.place span{font-size:.95rem;opacity:.9}
+
+.bar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:5;display:flex;gap:6px;
+  background:var(--glass);border:1px solid var(--glass-line);border-radius:18px;padding:6px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);max-width:calc(100vw - 32px)}
+.act{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:58px;text-decoration:none;padding:8px 10px;border:0;border-radius:12px;background:transparent;color:var(--hall-ink);cursor:pointer;font-size:.78rem}
+.act:hover{background:rgba(245,235,221,.08)}
+.act:focus-visible{outline:2px solid var(--gold);outline-offset:1px}
+.act svg{width:24px;height:24px;stroke:var(--gold);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.act[aria-pressed="true"]{background:rgba(245,196,111,.16)}
+
+.sheet{position:fixed;z-index:6;top:0;right:0;bottom:0;width:min(440px,100%);background:var(--surface);color:var(--ink);border-left:1px solid var(--line);display:flex;flex-direction:column;box-shadow:-20px 0 50px rgba(0,0,0,.35)}
+.sheet-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:calc(16px + env(safe-area-inset-top,0px));padding-bottom:10px;padding-left:20px;padding-right:max(20px,env(safe-area-inset-right,0px));border-bottom:1px solid var(--line)}
+.sheet-head h2{font-family:var(--display);font-weight:400;font-size:1.4rem;margin:0}
+.close{border:1px solid var(--line);background:transparent;border-radius:10px;padding:6px 12px;cursor:pointer;font-size:.9rem}
+.sheet-body{overflow-y:auto;padding-top:16px;padding-left:20px;padding-right:max(20px,env(safe-area-inset-right,0px));padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));flex:1;min-height:0}
+@media (max-width:640px){
+  .sheet{top:auto;left:0;width:100%;max-height:82%;border-left:0;border-top:1px solid var(--line);border-radius:18px 18px 0 0;box-shadow:0 -20px 50px rgba(0,0,0,.4)}
+  .sheet-head{padding-top:14px;padding-left:max(18px,env(safe-area-inset-left,0px))}
+  .sheet-body{padding-left:max(18px,env(safe-area-inset-left,0px))}
+  .brand p{display:none}
+}
+.sub{color:var(--muted);margin:0 0 14px;font-size:.92rem}
+label.lbl{display:block;font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px}
+textarea{width:100%;box-sizing:border-box;min-height:120px;resize:vertical;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px;line-height:1.5}
+textarea:focus{outline:2px solid var(--wax);outline-offset:1px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}
+.chip{border:1px solid var(--line);background:transparent;border-radius:999px;padding:4px 11px;font-size:.86rem;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--wax-soft);border-color:var(--wax);color:var(--wax-ink);font-weight:700}
+.chip:focus-visible,.btn:focus-visible,.pray:focus-visible,.close:focus-visible{outline:2px solid var(--wax);outline-offset:2px}
+.count{display:block;text-align:right;font-size:.78rem;color:var(--muted);font-variant-numeric:tabular-nums;margin-top:4px}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.btn{border-radius:10px;padding:10px 15px;cursor:pointer;border:1px solid var(--line);background:transparent;font-weight:700}
+.btn.primary{background:var(--wax);border-color:var(--wax);color:#1B1408}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.note{font-size:.86rem;color:var(--muted);margin:10px 0 0}
+.care{background:var(--alert-bg);color:var(--alert-ink);border-radius:10px;padding:12px 14px;margin-top:12px;font-size:.9rem}
+.care strong{display:block;margin-bottom:2px}
+.companion{margin-top:18px;border-top:1px solid var(--line);padding-top:14px}
+.companion h3{font-family:var(--display);font-weight:400;font-size:1.15rem;margin:0 0 8px}
+.reply{white-space:pre-wrap;line-height:1.65}
+.reply .lab{display:block;font-size:.76rem;text-transform:uppercase;letter-spacing:.08em;color:var(--wax-ink);font-weight:700;margin-top:12px}
+.reply .lab:first-child{margin-top:0}
+.thinking{color:var(--muted);font-style:italic}
+.disclaim{font-size:.8rem;color:var(--muted);margin-top:12px}
+.filters{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.wall{display:flex;flex-direction:column;gap:10px}
+.card{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 14px}
+.card.focus{border-color:var(--wax);box-shadow:0 0 0 2px var(--wax-soft)}
+.card p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+.meta{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:4px 12px;font-size:.78rem;color:var(--muted);align-items:center}
+.pill{border:1px solid var(--line);border-radius:999px;padding:0 8px}
+.del{background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;font-size:.78rem;padding:0}
+.pray{grid-row:1;grid-column:2;display:flex;flex-direction:column;align-items:center;gap:1px;background:transparent;border:1px solid var(--line);border-radius:10px;padding:6px 8px;cursor:pointer;min-width:60px}
+.pray .n{font-variant-numeric:tabular-nums;font-weight:700}
+.pray .w{font-size:.66rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.pray[aria-pressed="true"]{border-color:var(--wax);background:var(--wax-soft)}
+.pray[aria-pressed="true"] .w{color:var(--wax-ink)}
+.empty{border:1px dashed var(--line);border-radius:12px;padding:24px 18px;text-align:center;color:var(--muted)}
+.empty strong{display:block;font-family:var(--display);font-weight:400;font-size:1.15rem;color:var(--ink);margin-bottom:4px}
+.foot{font-size:.78rem;color:var(--muted);margin-top:18px}
+.nogl{position:fixed;inset:0;display:grid;place-items:center;color:var(--hall-muted);text-align:center;padding:0 24px}
+</style>
+</head>
+<body>
+
+<canvas id="scene" aria-label="A 3D house of prayer. Tap the floor to walk; tap a floating light to read its prayer."></canvas>
+<div class="nogl" id="nogl" hidden>This device can't draw the 3D hall, but you can still pray and visit the wall.</div>
+<div class="place" id="place"><b id="placeName">Church</b><span id="placeSub">Welcome in</span></div>
+
+<div class="top">
+  <div class="brand">
+    <h1>Thousand Lights</h1>
+    <p id="tagline">A quiet place to pray, together.</p>
+  </div>
+  <div class="stats">
+    <div class="faith"><label for="faith">I am</label>
+      <select id="faith">
+        <option value="Christian">Christian · Church</option>
+        <option value="Christian (Traditional)">Christian · Traditional church</option>
+        <option value="Catholic">Catholic · Church</option>
+        <option value="Muslim">Muslim · Mosque</option>
+        <option value="Buddhist">Buddhist · Temple</option>
+        <option value="Hindu">Hindu · Mandir</option>
+        <option value="Jewish">Jewish · Synagogue</option>
+        <option value="Sikh">Sikh · Gurdwara</option>
+        <option value="Open to all">Open to all · Chapel</option>
+      </select>
+    </div>
+    <span class="stat" id="here"><b>1</b> here now</span>
+    <span class="stat" id="lit"><b>0</b> prayers lifted</span>
+    <span class="stat" id="bows" hidden><b>0</b> / 108 bows today</span>
+  </div>
+</div>
+
+<a class="merit" id="meritBtn" href="#" target="_blank" rel="noopener"><span class="spark" aria-hidden="true"></span><span id="meritText">Share the blessing, click here to invite friends</span></a>
+<div class="hint" id="hint">Tap the floor to walk · tap a floating light to read that prayer</div>
+<div class="toast" id="toast" hidden></div>
+
+<nav class="bar" aria-label="Actions">
+  <button class="act" id="bowBtn" type="button"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="2.4"/><path d="M12 8c-3 0-5 2-5 5v1h10v-1c0-3-2-5-5-5z"/><path d="M5 20h14"/><path d="M8 14l-1 6M16 14l1 6"/></svg><span id="bowLabel">Kneel</span></button>
+  <button class="act" id="prayBtn" type="button" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M9 21V11l-3-3 2-2 4 4 4-4 2 2-3 3v10"/><path d="M12 10V3"/></svg>Pray</button>
+  <button class="act" id="wallBtn" type="button" aria-pressed="false"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h10M7 13h10M7 17h6"/></svg>Wall</button>
+  <a class="act" id="shareBtn" href="#" target="_blank" rel="noopener" aria-label="Share on WhatsApp"><svg viewBox="0 0 24 24"><path d="M4 20l1.3-3.9A8 8 0 1 1 8 19z"/><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1-1.5-2-1-1 .8a4 4 0 0 1-1.8-1.8l.8-1-1-2z"/></svg>Share</a>
+  <button class="act" id="seatBtn" type="button"><svg viewBox="0 0 24 24"><rect x="4" y="13" width="16" height="5" rx="2"/><path d="M12 4v6M9 7l3 3 3-3"/></svg>Sit</button>
+</nav>
+
+<section class="sheet" id="praySheet" hidden aria-labelledby="prayTitle">
+  <div class="sheet-head"><h2 id="prayTitle">Bring a prayer</h2><button class="close" data-close="praySheet" type="button">Close</button></div>
+  <div class="sheet-body">
+    <p class="sub" id="praySub" data-x="">Your prayer rises as a soft light in this hall. It stays anonymous.</p>
+    <label class="lbl" for="prayer">Your prayer</label>
+    <textarea id="prayer" maxlength="600" placeholder="Please pray for my mum's surgery on Friday. I'm scared, and I don't know how to be strong for her."></textarea>
+    <span class="count" id="count">0 / 600</span>
+    <div class="chips" id="cats" role="group" aria-label="Category"></div>
+    <div id="care" class="care" hidden>
+      <strong>You don't have to carry this alone.</strong>
+      If you're thinking about ending your life or might be in danger, please reach someone now: your local emergency number, Samaritans of Singapore on 1767 (24 hours), 988 in the US, or find a line near you at findahelpline.com.
+    </div>
+    <div class="actions">
+      <button class="btn primary" id="postBtn" type="button">Lift this prayer</button>
+      <button class="btn" id="askBtn" type="button">Just pray with the companion</button>
+      <button class="btn" id="stopBtn" type="button" hidden>Stop</button>
+    </div>
+    <p class="note" id="postNote" hidden></p>
+    <div class="companion" id="companion" hidden>
+      <h3>From the companion</h3>
+      <div class="reply" id="reply" aria-live="polite"></div>
+      <p class="disclaim" id="disclaim">The companion is an AI guide, not God and not clergy.</p>
+    </div>
+    <p class="foot">Prayers are shared anonymously with everyone who opens this page. Leave out full names, phone numbers and other private details.</p>
+  </div>
+</section>
+
+<section class="sheet" id="wallSheet" hidden aria-labelledby="wallTitle">
+  <div class="sheet-head"><h2 id="wallTitle">The wall</h2><button class="close" data-close="wallSheet" type="button">Close</button></div>
+  <div class="sheet-body">
+    <p class="sub">Tap "I prayed" after praying for someone. Their light grows brighter.</p>
+    <div class="filters" id="scope" role="group" aria-label="Which halls"></div>
+    <div class="filters" id="filters" role="group" aria-label="Filter by category"></div>
+    <p class="note" id="status">Gathering prayers…</p>
+    <div class="wall" id="wall"><div class="empty"><strong>No prayers here yet</strong>Open Pray to lift the first one.</div></div>
+  </div>
+</section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* ===================== FAITH DEFINITIONS ===================== */
+const FAITHS={
+  "Christian":{key:"modern",place:"Church",sub:"Welcome home",tag:"A church to worship and pray in, together.",act:"Worship",scripture:"the Bible (cite book, chapter and verse; prefer public-domain wording such as the KJV or WEB)",clergy:"pastor",prayLabel:"A prayer",closing:"in Jesus' name, if that fits their words",bows:false,minZ:-8},
+  "Christian (Traditional)":{key:"church",place:"Traditional Church",sub:"Come, all who are weary",tag:"A quiet church to pray in, together.",act:"Kneel",scripture:"the Bible (cite book, chapter and verse; prefer public-domain wording such as the KJV or WEB)",clergy:"pastor or priest",prayLabel:"A prayer",closing:"in Jesus' name, if that fits their words",bows:false},
+  "Catholic":{key:"catholic",place:"Catholic Church",sub:"Peace be with you",tag:"A quiet Catholic church to pray in, together.",act:"Kneel",scripture:"the Bible, including the deuterocanonical books (cite book, chapter and verse; prefer public-domain wording such as the Douay-Rheims)",clergy:"priest",prayLabel:"A prayer",closing:"through Christ our Lord, if that fits their words; you may also suggest a traditional prayer such as the Our Father or Hail Mary",bows:false},
+  "Muslim":{key:"mosque",place:"Mosque",sub:"As-salamu alaykum",tag:"A quiet mosque to make du'a, together.",act:"Bow",scripture:"the Qur'an (cite surah and ayah; give an English rendering) and, sparingly, well-known authentic hadith with their collection",clergy:"imam",prayLabel:"A du'a",closing:"",bows:false},
+  "Buddhist":{key:"temple",place:"Temple",sub:"Rest here a while",tag:"A quiet temple to practise in, together.",act:"Bow",scripture:"Buddhist texts such as the Dhammapada or well-known suttas (cite the text and verse or sutta number)",clergy:"monk or teacher",prayLabel:"A reflection",closing:"",bows:true},
+  "Hindu":{key:"mandir",place:"Mandir",sub:"Namaste",tag:"A quiet mandir to pray in, together.",act:"Bow",scripture:"Hindu scriptures such as the Bhagavad Gita or the Upanishads (cite chapter and verse)",clergy:"priest or guru",prayLabel:"A prayer",closing:"",bows:false},
+  "Jewish":{key:"synagogue",place:"Synagogue",sub:"Shalom",tag:"A quiet synagogue to pray in, together.",act:"Bow",scripture:"the Hebrew Bible, especially Psalms (cite book, chapter and verse)",clergy:"rabbi",prayLabel:"A prayer",closing:"",bows:false},
+  "Sikh":{key:"gurdwara",place:"Gurdwara",sub:"Waheguru ji ka Khalsa",tag:"A quiet gurdwara to pray in, together.",act:"Bow",scripture:"the Guru Granth Sahib (cite the Ang/page and the Guru where you can)",clergy:"granthi or sangat",prayLabel:"An ardas",closing:"",bows:false},
+  "Open to all":{key:"chapel",place:"Chapel",sub:"All are welcome",tag:"A quiet place to pray, together.",act:"Bow",scripture:"any tradition's sacred texts or a widely loved reflection (name the source)",clergy:"faith leader",prayLabel:"A prayer",closing:"",bows:false}
+};
+const CATS=["Health","Family","Work & study","Exams","Grief","Guidance","Gratitude","Other"];
+const CRISIS=/(suicid|kill myself|end my life|end it all|take my (own )?life|don'?t want to (live|be alive|wake up|be here)|not wake up|self[- ]?harm|hurt myself|cut myself|better off dead|no reason to live)/i;
+const ROBES=["#C9893B","#7C9A6B","#5F7FA8","#A8616A","#8A6FA6","#C7A24A","#4E8E8E","#B87850"];
+const SKIN=["#F2CDA6","#E0B08A","#B98258","#8A5A3B"];
+const REDUCED=matchMedia("(prefers-reduced-motion: reduce)").matches;
+const $=id=>document.getElementById(id);
+const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+const S={faith:store.get("lamp-faith")||store.get("lamp-trad")||"Christian",cat:"Health",filter:"All",scope:"here",prayers:[],amens:[],uid:null,db:null,lobby:null,hall:null,hallUnsub:null,canWrite:true,isOwner:false,sample:null,ctl:null,confirmDel:null,focusId:null};
+if(!FAITHS[S.faith])S.faith="Christian";
+$("faith").value=S.faith;
+
+let toastT;function toast(m){const t=$("toast");t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,2600)}
+function hash(s){let h=0;for(const c of String(s))h=(h*31+c.charCodeAt(0))|0;return Math.abs(h)}
+function ago(ms){const s=(Date.now()-ms)/1000;if(s<60)return"just now";const m=s/60;if(m<60)return Math.floor(m)+" min ago";const h=m/60;if(h<24)return Math.floor(h)+" h ago";const d=h/24;if(d<7)return Math.floor(d)+" d ago";return new Date(ms).toLocaleDateString()}
+const safe=s=>String(s).replace(/[^A-Za-z0-9_\-.~:@+]/g,"-").slice(0,120);
+const F=()=>FAITHS[S.faith];
+const hallPrayers=()=>S.prayers.filter(p=>(p.tradition||"Open to all")===S.faith);
+
+/* bows (Buddhist only) */
+const today=new Date().toDateString();
+let bows=store.get("lamp-bows-day")===today?+(store.get("lamp-bows")||0):0;
+function showBows(){$("bows").innerHTML="<b>"+bows+"</b> / 108 bows today";$("bows").hidden=!F().bows}
+
+/* panels */
+function openSheet(id){for(const s of["praySheet","wallSheet"])$(s).hidden=s!==id;
+  $("prayBtn").setAttribute("aria-pressed",id==="praySheet");$("wallBtn").setAttribute("aria-pressed",id==="wallSheet");
+  setPresence({act:id==="praySheet"?"pray":"idle"});if(id==="praySheet")setTimeout(()=>$("prayer").focus(),50)}
+function closeSheets(){openSheet(null)}
+document.querySelectorAll("[data-close]").forEach(b=>b.onclick=closeSheets);
+$("prayBtn").onclick=()=>$("praySheet").hidden?openSheet("praySheet"):closeSheets();
+$("wallBtn").onclick=()=>$("wallSheet").hidden?openSheet("wallSheet"):closeSheets();
+addEventListener("keydown",e=>{if(e.key==="Escape")closeSheets()});
+
+function chip(label,pressed,onClick){const b=document.createElement("button");b.type="button";b.className="chip";b.textContent=label;b.setAttribute("aria-pressed",pressed?"true":"false");b.onclick=onClick;return b}
+function renderCats(){$("cats").replaceChildren(...CATS.map(k=>chip(k,k===S.cat,()=>{S.cat=k;renderCats()})))}
+function renderFilters(){
+  $("scope").replaceChildren(chip("This "+F().place.toLowerCase(),S.scope==="here",()=>{S.scope="here";renderFilters();renderWall()}),chip("All houses of prayer",S.scope==="all",()=>{S.scope="all";renderFilters();renderWall()}));
+  $("filters").replaceChildren(...["All",...CATS].map(k=>chip(k,k===S.filter,()=>{S.filter=k;renderFilters();renderWall()})))}
+renderCats();
+const ta=$("prayer");
+ta.addEventListener("input",()=>{$("count").textContent=ta.value.length+" / 600";$("care").hidden=!CRISIS.test(ta.value)});
+function note(msg){const n=$("postNote");n.textContent=msg;n.hidden=false}
+
+/* wall */
+function amenInfo(){const counts={},mine=new Set();for(const p of S.prayers){counts[p.id]=p.count||0;if(p.mine)mine.add(p.id)}return{counts,mine}}
+function renderWall(){
+  const wall=$("wall"),{counts,mine}=amenInfo(),hp=hallPrayers();
+  $("lit").innerHTML="<b>"+hp.length+"</b> prayer"+(hp.length===1?"":"s")+" lifted";
+  const base=S.scope==="here"?hp:S.prayers;
+  const list=base.filter(p=>S.filter==="All"||p.category===S.filter);
+  if(!list.length){wall.innerHTML=base.length?'<div class="empty"><strong>Nothing in this category yet</strong>Try another filter.</div>':'<div class="empty"><strong>No prayers here yet</strong>Open Pray to lift the first one.</div>';return}
+  wall.replaceChildren(...list.map(p=>{
+    const card=document.createElement("article");card.className="card"+(S.focusId===p.id?" focus":"");card.id="c-"+p.id;
+    const t=document.createElement("p");t.textContent=p.text;
+    const n=counts[p.id]||0,lit=mine.has(p.id);
+    const b=document.createElement("button");b.type="button";b.className="pray";b.setAttribute("aria-pressed",lit?"true":"false");
+    b.innerHTML='<span class="n"></span><span class="w"></span>';b.querySelector(".n").textContent=n;b.querySelector(".w").textContent=lit?"prayed":"I prayed";
+    b.setAttribute("aria-label",(lit?"You prayed for this. ":"I prayed for this. ")+n+" prayed");
+    b.disabled=!S.online;b.onclick=()=>togglePray(p.id,lit);
+    const meta=document.createElement("div");meta.className="meta";
+    const pill=document.createElement("span");pill.className="pill";pill.textContent=p.category||"Other";
+    const tr=document.createElement("span");tr.textContent=(FAITHS[p.tradition]||FAITHS["Open to all"]).place;
+    const tm=document.createElement("span");tm.textContent=ago(p.createdAt||0);
+    meta.append(pill,tr,tm);
+    if(n)meta.append(Object.assign(document.createElement("span"),{textContent:n===1?"1 person prayed":n+" people prayed"}));
+    if(p.isMine||S.admin){
+      const d=document.createElement("button");d.type="button";d.className="del";d.textContent=S.confirmDel===p.id?"Tap again to remove":"Remove";
+      d.onclick=()=>{if(S.confirmDel===p.id){S.confirmDel=null;removePrayer(p.id)}else{S.confirmDel=p.id;renderWall();setTimeout(()=>{if(S.confirmDel===p.id){S.confirmDel=null;renderWall()}},4000)}};
+      meta.append(d)}
+    card.append(t,b,meta);return card}))}
+async function togglePray(pid,lit){try{const r=await api("/api/prayers/"+pid+"/amen",{method:lit?"DELETE":"POST"});if(r.status===429){toast("Please slow down a little and try again shortly.");return}if(!r.ok)throw 0;const j=await r.json();const p=S.prayers.find(x=>x.id===pid);if(p){p.count=j.count;p.mine=j.mine}renderWall();syncOrbs();if(!lit)bowOnce(true)}catch(e){toast("That didn't save. Check your connection and try again.")}}
+async function removePrayer(pid){try{const r=await api("/api/prayers/"+pid,{method:"DELETE"});if(r.status===403){toast("Only the person who posted this prayer can remove it.");return}if(!r.ok)throw 0;S.prayers=S.prayers.filter(p=>p.id!==pid);renderWall();syncOrbs()}catch(e){toast("Couldn't remove that prayer. Try again in a moment.")}}
+function upsertPrayer(p){const i=S.prayers.findIndex(x=>x.id===p.id);if(i>=0)S.prayers[i]=Object.assign({},S.prayers[i],p,{isMine:S.prayers[i].isMine||!!p.isMine,mine:S.prayers[i].mine||!!p.mine});else S.prayers.unshift(p);renderWall();syncOrbs()}
+
+$("postBtn").onclick=async()=>{
+  const text=ta.value.trim();
+  if(!text){note("Write your prayer first.");ta.focus();return}
+  $("postBtn").disabled=true;
+  try{const r=await api("/api/prayers",{method:"POST",body:{text,category:S.cat,tradition:S.faith}});
+    if(r.status===429){note("You've lifted several prayers just now. Please wait a few minutes before posting another.");return}
+    if(!r.ok)throw 0;const j=await r.json();upsertPrayer(j.prayer);
+    note("Your prayer has been lifted."+(S.companion?" The companion's reply is below.":""));ta.value="";$("count").textContent="0 / 600";sendRising();
+    if(S.companion){askCompanion(text);setTimeout(()=>$("companion").scrollIntoView({block:"start",behavior:REDUCED?"auto":"smooth"}),80)}}
+  catch(e){note("That didn't post. Check your connection and try again.")}
+  finally{$("postBtn").disabled=false}};
+function applyWriteState(){renderWall()}
+
+/* companion */
+function renderReply(text){const r=$("reply");r.replaceChildren();const re=/^(Scripture|A prayer|A du'a|A dua|A reflection|An ardas|For today|Please reach out)\s*:\s*/i;
+  for(const line of text.split("\n")){const m=line.match(re);
+    if(m){const l=document.createElement("span");l.className="lab";l.textContent=m[1];r.append(l,document.createTextNode(line.slice(m[0].length)+"\n"))}
+    else r.append(document.createTextNode(line+"\n"))}}
+$("askBtn").onclick=()=>{const text=ta.value.trim();if(!text){note("Write your prayer first, then the companion can pray with you.");ta.focus();return}askCompanion(text)};
+async function askCompanion(text){
+  if(!S.companion){note("The companion isn't available right now.");return}
+  $("companion").hidden=false;$("reply").innerHTML='<span class="thinking">Sitting with your prayer…</span>';
+  $("askBtn").disabled=true;$("stopBtn").hidden=false;S.ctl=new AbortController();let out="";
+  try{const r=await api("/api/companion",{method:"POST",body:{text,faith:S.faith,category:S.cat},signal:S.ctl.signal});
+    if(r.status===429){$("reply").textContent="The companion is resting for a moment. You can ask again in a little while.";return}
+    if(r.status===503){$("reply").textContent="The companion isn't switched on yet.";return}
+    if(!r.ok||!r.body)throw 0;
+    const rd=r.body.getReader(),dec=new TextDecoder();
+    for(;;){const{done,value}=await rd.read();if(done)break;out+=dec.decode(value,{stream:true});renderReply(out)}
+    if(!out.trim())$("reply").textContent="The companion couldn't answer just now. Try again in a moment."}
+  catch(e){if(e&&e.name==="AbortError"){if(!out)$("reply").textContent=""}else if(out)renderReply(out+"\n\n[Interrupted. Try again.]");else $("reply").textContent="Something interrupted the reply. Try again."}
+  finally{$("askBtn").disabled=false;$("stopBtn").hidden=true}}
+$("stopBtn").onclick=()=>S.ctl&&S.ctl.abort();
+
+/* ===================== 3D ===================== */
+let renderer,scene,camera,me,clock,raycaster,floorPlane,G=null,orbs=[],risers=[],flickers=[],SEATS=[];
+const others=new Map();
+const HALL={minX:-8.6,maxX:8.6,minZ:-9.4,maxZ:9};let sweeps=[];
+const myColor=store.get("lamp-robe")||ROBES[Math.floor(Math.random()*ROBES.length)];store.set("lamp-robe",myColor);
+const mySkin=store.get("lamp-skin")||SKIN[Math.floor(Math.random()*SKIN.length)];store.set("lamp-skin",mySkin);
+let GLOW,SHADOW,DOVE;
+
+function tex(w,h,draw,rep){const c=document.createElement("canvas");c.width=w;c.height=h;draw(c.getContext("2d"),w,h);const t=new THREE.CanvasTexture(c);t.anisotropy=4;t.encoding=THREE.sRGBEncoding;if(rep){t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(rep[0],rep[1])}return t}
+function radial(stops){return tex(64,64,(g,w,h)=>{const r=g.createRadialGradient(32,32,0,32,32,32);stops.forEach(s=>r.addColorStop(s[0],s[1]));g.fillStyle=r;g.fillRect(0,0,w,h)})}
+const M=(c,o)=>new THREE.MeshStandardMaterial(Object.assign({color:c,roughness:.8},o||{}));
+const B=(c)=>new THREE.MeshBasicMaterial({color:c});
+function add(mesh,x,y,z,p){mesh.position.set(x,y,z);(p||G).add(mesh);return mesh}
+function box(w,h,d,m,x,y,z,p){return add(new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m),x,y,z,p)}
+function cyl(rt,rb,h,m,x,y,z,seg,p){return add(new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,seg||20),m),x,y,z,p)}
+function glowSprite(x,y,z,s,op,p){const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:op??1}));sp.scale.set(s,s,1);return add(sp,x,y,z,p)}
+
+/* window shapes */
+function lancet(w,h){const s=new THREE.Shape(),r=w;s.moveTo(-w/2,0);s.lineTo(-w/2,h);s.absarc(w/2,h,r,Math.PI,Math.PI*2/3,true);s.absarc(-w/2,h,r,Math.PI/3,0,true);s.lineTo(w/2,0);s.lineTo(-w/2,0);return s}
+function roundArch(w,h){const s=new THREE.Shape();s.moveTo(-w/2,0);s.lineTo(-w/2,h);s.absarc(0,h,w/2,Math.PI,0,true);s.lineTo(w/2,0);s.lineTo(-w/2,0);return s}
+function horseshoe(w,h){const s=new THREE.Shape(),r=w*.58;s.moveTo(-w/2,0);s.lineTo(-w/2,h);s.absarc(0,h+r*.15,r,Math.PI+.25,-.25,true);s.lineTo(w/2,0);s.lineTo(-w/2,0);return s}
+function shapeMesh(shape,map,x,y,z,ry,p){const g=new THREE.ShapeGeometry(shape,24);g.computeBoundingBox();const bb=g.boundingBox,uv=g.attributes.uv,pos=g.attributes.position;
+  for(let i=0;i<uv.count;i++)uv.setXY(i,(pos.getX(i)-bb.min.x)/(bb.max.x-bb.min.x),(pos.getY(i)-bb.min.y)/(bb.max.y-bb.min.y));
+  const m=add(new THREE.Mesh(g,new THREE.MeshBasicMaterial({map,side:THREE.DoubleSide})),x,y,z,p);m.rotation.y=ry||0;return m}
+
+/* textures */
+function stained(cross){return tex(256,512,(g,w,h)=>{const C=["#1E4FA8","#B3202B","#E2B33B","#2E8B57","#7B3FA0","#2A6FD1","#D9772B"];
+  for(let y=0;y<h;y+=32)for(let x=0;x<w;x+=32){g.fillStyle=C[(x*7+y*3+((x*y)>>5))%C.length];g.globalAlpha=.85+Math.random()*.15;g.fillRect(x,y,32,32)}g.globalAlpha=1;
+  const r=g.createRadialGradient(w/2,h*.45,10,w/2,h*.45,h*.5);r.addColorStop(0,"rgba(255,245,210,.55)");r.addColorStop(1,"rgba(0,0,0,.2)");g.fillStyle=r;g.fillRect(0,0,w,h);
+  g.strokeStyle="#1a1410";g.lineWidth=4;for(let y=0;y<=h;y+=32){g.beginPath();g.moveTo(0,y);g.lineTo(w,y);g.stroke()}for(let x=0;x<=w;x+=32){g.beginPath();g.moveTo(x,0);g.lineTo(x,h);g.stroke()}
+  if(cross){g.fillStyle="#FFF4D6";g.fillRect(w/2-14,h*.18,28,h*.62);g.fillRect(w/2-70,h*.34,140,28);g.strokeStyle="#1a1410";g.lineWidth=5;g.strokeRect(w/2-14,h*.18,28,h*.62);g.strokeRect(w/2-70,h*.34,140,28)}})}
+function starTile(bg,fg,line){return tex(256,256,(g,w,h)=>{g.fillStyle=bg;g.fillRect(0,0,w,h);const star=(cx,cy,r,f)=>{g.save();g.translate(cx,cy);g.fillStyle=f;for(const a of[0,Math.PI/4]){g.save();g.rotate(a);g.fillRect(-r,-r,2*r,2*r);g.restore()}g.restore()};
+  for(let y=0;y<=h;y+=64)for(let x=0;x<=w;x+=64){star(x,y,20,fg);star(x,y,11,bg);star(x+32,y+32,9,line)}
+  g.strokeStyle=line;g.lineWidth=2;for(let i=-w;i<w*2;i+=32){g.beginPath();g.moveTo(i,0);g.lineTo(i+h,h);g.stroke();g.beginPath();g.moveTo(i,h);g.lineTo(i+h,0);g.stroke()}},[2,2])}
+function planks(a,b){return tex(512,512,(g,w,h)=>{for(let i=0;i<16;i++){const y=i*32;g.fillStyle=i%2?a:b;g.fillRect(0,y,w,31);g.fillStyle="rgba(0,0,0,.35)";g.fillRect(0,y+31,w,1);const off=(i*137)%w;g.fillRect(off,y,1,31);g.fillRect((off+256)%w,y,1,31);for(let k=0;k<30;k++){g.fillStyle="rgba(255,220,180,"+(Math.random()*.05)+")";g.fillRect(Math.random()*w,y+Math.random()*31,40+Math.random()*80,1)}}},[4,5])}
+function stones(a,b){return tex(512,512,(g,w,h)=>{g.fillStyle=b;g.fillRect(0,0,w,h);for(let y=0;y<h;y+=64)for(let x=0;x<w;x+=64){const v=(Math.random()*20-10)|0;g.fillStyle=((x/64+y/64)%2)?a:shade(a,v);g.fillRect(x+2,y+2,60,60)}},[5,6])}
+function shade(hex,v){const n=parseInt(hex.slice(1),16);const c=k=>Math.max(0,Math.min(255,((n>>k)&255)+v));return"rgb("+c(16)+","+c(8)+","+c(0)+")"}
+function prayerCarpet(base,band,motif){return tex(512,512,(g,w,h)=>{g.fillStyle=base;g.fillRect(0,0,w,h);
+  for(let row=0;row<4;row++){const y=row*128;g.fillStyle=band;g.fillRect(0,y+118,w,10);
+    for(let x=0;x<w;x+=64){g.strokeStyle=motif;g.lineWidth=3;g.beginPath();g.moveTo(x+8,y+112);g.lineTo(x+8,y+40);g.quadraticCurveTo(x+32,y+6,x+56,y+40);g.lineTo(x+56,y+112);g.stroke();g.fillStyle=motif;g.globalAlpha=.25;g.fill();g.globalAlpha=1;g.fillStyle=band;g.fillRect(x+28,y+60,8,8)}}},[3,4])}
+function stripes(a,b){return tex(256,256,(g,w,h)=>{g.fillStyle=a;g.fillRect(0,0,w,h);g.fillStyle=b;for(let y=0;y<h;y+=64)g.fillRect(0,y+50,w,10)},[2,6])}
+function curtain(){return tex(256,512,(g,w,h)=>{const r=g.createLinearGradient(0,0,w,0);for(let i=0;i<=8;i++)r.addColorStop(i/8,i%2?"#1F3C88":"#284CA8");g.fillStyle=r;g.fillRect(0,0,w,h);g.fillStyle="#D9B44A";g.fillRect(0,h-40,w,16);g.fillRect(0,24,w,8);
+  g.strokeStyle="#E8C55A";g.lineWidth=8;const cx=w/2,cy=h*.42,R=64;for(const flip of[1,-1]){g.beginPath();for(let k=0;k<3;k++){const a=-Math.PI/2*flip+k*2*Math.PI/3;g.lineTo(cx+R*Math.cos(a),cy+R*Math.sin(a)*flip)}g.closePath();g.stroke()}})}
+function jali(){return tex(256,256,(g,w,h)=>{g.fillStyle="#FFE9B8";g.fillRect(0,0,w,h);g.fillStyle="#6E4A2A";for(let y=0;y<h;y+=32)for(let x=0;x<w;x+=32){g.save();g.translate(x+16,y+16);g.rotate(Math.PI/4);g.fillRect(-13,-3,26,6);g.fillRect(-3,-13,6,26);g.restore()}g.strokeStyle="#6E4A2A";g.lineWidth=12;g.strokeRect(0,0,w,h)})}
+function lattice(){return tex(256,256,(g,w,h)=>{const r=g.createLinearGradient(0,0,0,h);r.addColorStop(0,"#FFF0D2");r.addColorStop(1,"#C8783A");g.fillStyle=r;g.fillRect(0,0,w,h);g.strokeStyle="#3B2316";g.lineWidth=6;for(let i=0;i<=w;i+=32){g.beginPath();g.moveTo(i,0);g.lineTo(i,h);g.stroke();g.beginPath();g.moveTo(0,i);g.lineTo(w,i);g.stroke()}g.lineWidth=14;g.strokeRect(0,0,w,h)})}
+function dusk(){return tex(256,512,(g,w,h)=>{const r=g.createLinearGradient(0,0,0,h);r.addColorStop(0,"#1F2346");r.addColorStop(.55,"#7A4C5A");r.addColorStop(.8,"#E59A4E");r.addColorStop(1,"#F6C977");g.fillStyle=r;g.fillRect(0,0,w,h);g.fillStyle="rgba(255,250,235,.9)";for(let i=0;i<40;i++)g.fillRect(Math.random()*w,Math.random()*h*.45,1.5,1.5);g.strokeStyle="#2A170E";g.lineWidth=8;g.beginPath();g.moveTo(w/2,0);g.lineTo(w/2,h);g.stroke()})}
+
+/* seating helpers */
+function pewRows(color,rows,z0){const wood=M(color,{roughness:.6});SEATS=[];
+  for(let r=0;r<rows;r++){const z=(z0||-6.4)+r*2.4;for(const s of[-1,1]){const cx=s*4.1;
+    box(4.6,.12,.7,wood,cx,.5,z);box(4.6,.7,.1,wood,cx,.85,z+.35);box(.12,.95,.75,wood,cx-2.3,.48,z);box(.12,.95,.75,wood,cx+2.3,.48,z);
+    for(const dx of[-1.4,0,1.4])SEATS.push({x:cx+dx,z:z-.55})}}}
+function matsGrid(c1,c2){SEATS=[];const e=M(c2,{roughness:.9}),t=M(c1,{roughness:.95});for(let r=0;r<5;r++)for(let c=0;c<6;c++){const x=-6.25+c*2.5,z=-6.5+r*2.6;box(1.5,.05,1.5,e,x,.025,z);box(1.3,.07,1.3,t,x,.04,z);SEATS.push({x,z})}}
+function floorRows(){SEATS=[];for(let r=0;r<5;r++)for(let c=0;c<7;c++)SEATS.push({x:-6+c*2,z:-6.6+r*2.7})}
+function hangingLamps(color,positions,y){const mat=B(color);for(const[x,z]of positions){cyl(.24,.3,.5,mat,x,y,z,12);cyl(.01,.01,2.4,M("#2a1d14"),x,y+1.45,z,4);glowSprite(x,y,z,1.7,.5)}}
+function chandelier(x,y,z,R,n,col){const ring=new THREE.Mesh(new THREE.TorusGeometry(R,.05,8,40),M("#C9A24A",{metalness:.7,roughness:.3}));ring.rotation.x=Math.PI/2;add(ring,x,y,z);
+  for(let i=0;i<n;i++){const a=i/n*Math.PI*2;cyl(.07,.1,.22,B(col),x+R*Math.cos(a),y+.12,z+R*Math.sin(a),8);glowSprite(x+R*Math.cos(a),y+.15,z+R*Math.sin(a),.7,.7)}
+  for(let i=0;i<4;i++){const a=i/4*Math.PI*2;const c=add(new THREE.Mesh(new THREE.CylinderGeometry(.012,.012,3,4),M("#C9A24A")),x+R*.5*Math.cos(a),y+1.5,z+R*.5*Math.sin(a));c.rotation.z=Math.cos(a)*.3;c.rotation.x=-Math.sin(a)*.3}}
+
+/* room shell */
+function shell(o){
+  scene.background=new THREE.Color(o.bg);scene.fog=new THREE.Fog(o.bg,20,38);
+  const f=add(new THREE.Mesh(new THREE.PlaneGeometry(20,24),new THREE.MeshStandardMaterial({map:o.floor,roughness:.8})),0,0,-1);f.rotation.x=-Math.PI/2;floorPlane=f;
+  const wall=M(o.wall,{roughness:.9});
+  add(new THREE.Mesh(new THREE.PlaneGeometry(20,10),wall),0,5,-13);
+  for(const s of[-1,1]){const w=add(new THREE.Mesh(new THREE.PlaneGeometry(24,10),wall),s*10,5,-1);w.rotation.y=-s*Math.PI/2}
+  const ceil=add(new THREE.Mesh(new THREE.PlaneGeometry(20,24),M(o.ceil||o.wall,{roughness:1})),0,10,-1);ceil.rotation.x=Math.PI/2;
+  if(o.dado){for(const s of[-1,1]){const d=add(new THREE.Mesh(new THREE.PlaneGeometry(24,1.4),new THREE.MeshStandardMaterial({map:o.dado,roughness:.6})),s*9.98,.7,-1);d.rotation.y=-s*Math.PI/2}add(new THREE.Mesh(new THREE.PlaneGeometry(20,1.4),new THREE.MeshStandardMaterial({map:o.dado,roughness:.6})),0,.7,-12.98)}
+  if(o.sideWin)for(const s of[-1,1])for(const z of[-6,0,6])shapeMesh(o.sideWin.shape,o.sideWin.map,s*9.97,o.sideWin.y,z,-s*Math.PI/2);
+  if(o.pillar)for(const s of[-1,1])for(let z=-11;z<=9;z+=4){cyl(.3,.34,10,o.pillar,s*8.3,5,z);cyl(.5,.55,.3,o.pillarBase||o.pillar,s*8.3,.15,z)}
+  if(o.beams)for(let z=-11;z<=9;z+=4)box(17,.4,.4,o.beams,0,9.2,z);
+  // lights
+  G.add(new THREE.HemisphereLight(o.sky,o.ground,o.hemi));
+  const key=new THREE.PointLight(o.key,o.keyI,26,1.4);key.position.set(0,5,-9);G.add(key);
+  const fill=new THREE.PointLight(o.fill,o.fillI,30,1.3);fill.position.set(0,7,5);G.add(fill);
+  renderer.toneMappingExposure=o.exposure||1.1}
+
+/* ---------- the seven houses ---------- */
+const BUILD={
+modern(){
+  shell({bg:"#05060B",floor:tex(256,256,(g,w,h)=>{g.fillStyle="#2A1A16";g.fillRect(0,0,w,h);for(let i=0;i<500;i++){g.fillStyle="rgba(255,230,210,"+Math.random()*.05+")";g.fillRect(Math.random()*w,Math.random()*h,2,2)}},[6,6]),wall:"#120B09",ceil:"#05060B",sky:"#7C88C8",ground:"#1a0e08",hemi:.4,key:"#A9BCFF",keyI:1.3,fill:"#FFC89A",fillI:.75,exposure:1.2});
+  // warm wood panelling on the side walls
+  for(const s of[-1,1]){const t=planks("#6A3620","#5C2E1B");t.repeat.set(6,3);const pnl=add(new THREE.Mesh(new THREE.PlaneGeometry(22,4.5),new THREE.MeshStandardMaterial({map:t,roughness:.6})),s*9.95,2.25,0);pnl.rotation.y=-s*Math.PI/2}
+  // stage
+  const stageTop=M("#24304F",{roughness:.35,metalness:.2}),fascia=M("#7A4128",{roughness:.6});
+  box(17,.9,4.6,stageTop,0,.45,-10.9);box(17,.86,.06,fascia,0,.44,-8.58);
+  for(let i=-3;i<=3;i++)box(1.6,.14,.4,M("#3A2A22"),i*2.4,.07,-8.2);
+  glowSprite(0,1,-10.4,9,.18);
+  // big LED screen with a verse
+  const screen=tex(1024,280,(g,w,h)=>{g.fillStyle="#080A18";g.fillRect(0,0,w,h);
+    for(const[x0,x1]of[[0,330],[694,1024]]){for(let i=0;i<70;i++){const x=x0+Math.random()*(x1-x0),y=Math.random()*h,r=10+Math.random()*60;const gr=g.createRadialGradient(x,y,0,x,y,r);const c=Math.random()<.5?"255,120,80":"140,90,220";gr.addColorStop(0,"rgba("+c+",.35)");gr.addColorStop(1,"rgba("+c+",0)");g.fillStyle=gr;g.fillRect(x-r,y-r,2*r,2*r)}}
+    g.fillStyle="#0E1E5A";g.fillRect(344,0,336,h);g.strokeStyle="rgba(150,180,255,.45)";g.lineWidth=2;for(let i=0;i<14;i++){g.beginPath();g.moveTo(344+Math.random()*336,0);g.lineTo(344+Math.random()*336,h);g.stroke()}
+    for(let i=0;i<120;i++){g.fillStyle="rgba(255,255,255,"+Math.random()*.8+")";g.fillRect(Math.random()*w,Math.random()*h,1.5,1.5)}
+    g.fillStyle="#fff";g.textAlign="center";g.font="600 30px Georgia,serif";g.fillText("The LORD is my shepherd;",512,118);g.fillText("I shall not want.",512,158);g.font="18px sans-serif";g.fillStyle="#BFD0FF";g.fillText("PSALM 23:1",512,200);
+    g.font="600 30px Georgia,serif";g.fillStyle="rgba(255,255,255,.9)";g.fillText("Welcome home",165,150);g.fillText("Welcome home",859,150)});
+  box(14.4,4.1,.2,M("#020203"),0,7.4,-12.95);add(new THREE.Mesh(new THREE.PlaneGeometry(14,3.8),new THREE.MeshBasicMaterial({map:screen})),0,7.4,-12.83);
+  // glowing geometric set pieces
+  const facets=()=>tex(128,256,(g,w,h)=>{g.fillStyle="#0B1030";g.fillRect(0,0,w,h);const C=["#3A55D9","#6D4BD8","#2F8BE6","#E0785A","#9B6BE8","#1E2E8C"];
+    for(let i=0;i<26;i++){g.fillStyle=C[i%C.length];g.globalAlpha=.55+Math.random()*.45;g.beginPath();for(let k=0;k<3;k++)g.lineTo(Math.random()*w,Math.random()*h);g.fill()}g.globalAlpha=1;
+    g.strokeStyle="#D9E2FF";g.lineWidth=3;for(let i=0;i<9;i++){g.beginPath();g.moveTo(Math.random()*w,Math.random()*h);g.lineTo(Math.random()*w,Math.random()*h);g.stroke()}g.lineWidth=6;g.strokeRect(0,0,w,h)});
+  const shardDefs=[[-7.4,3.4,1.3,.35],[-6.1,4.2,1.1,-.25],[-4.9,2.8,1.2,.2],[-2.2,3.2,.9,.4],[2.4,3.6,1.1,-.3],[3.7,4.4,1.2,.15],[5.1,3,1,-.35],[6.4,3.9,1.2,.3],[7.6,2.9,.9,-.2]];
+  for(const[x,h,w,ry]of shardDefs){const m=add(new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:facets(),side:THREE.DoubleSide})),x,.9+h/2,-12.1+Math.abs(ry));m.rotation.y=ry;m.rotation.z=ry*.15;box(w*.9,.15,.5,M("#0C0C10"),x,.97,-12.1+Math.abs(ry))}
+  // truss towers and hanging light bars
+  const truss=new THREE.MeshBasicMaterial({color:"#8A8F9C",wireframe:true});
+  for(const x of[-5.5,-1,1,5.5])box(.35,6,.35,truss,x,3.9,-12.3);
+  for(let i=0;i<12;i++)box(.04,.9+Math.random()*1.2,.04,B("#DDE6FF"),-7.5+i*1.36,8.9,-9-Math.random()*3);
+  const sp=[];for(let i=0;i<260;i++)sp.push(-9.5+Math.random()*19,5.4+Math.random()*4.5,-12.9+Math.random()*.05);
+  const sg=new THREE.BufferGeometry();sg.setAttribute("position",new THREE.Float32BufferAttribute(sp,3));G.add(new THREE.Points(sg,new THREE.PointsMaterial({color:"#FFFFFF",size:.05})));
+  // band
+  const black=M("#141418",{roughness:.4,metalness:.3}),chrome=M("#C9CCD4",{metalness:.9,roughness:.2}),brass=M("#C9A24A",{metalness:.8,roughness:.25});
+  box(3,.4,2.2,M("#1B1B22"),5,1.1,-11.4);
+  const kick=cyl(.4,.4,.45,M("#1E2A5A"),5,1.72,-11.6,20);kick.rotation.x=Math.PI/2;
+  for(const[dx,dz,r]of[[-.7,.2,.22],[.7,.2,.25],[-.3,-.2,.18],[.3,-.2,.18]])cyl(r,r,.25,M("#1E2A5A"),5+dx,1.75,-11.4+dz,16);
+  for(const[dx,dz,y]of[[-1.1,-.3,2.5],[1.2,-.4,2.6],[0,-.8,2.7]]){cyl(.012,.012,y-1.3,chrome,5+dx,(y+1.3)/2,-11.4+dz,6);cyl(.38,.38,.015,brass,5+dx,y,-11.4+dz,20)}
+  for(const s of[-1,1]){const l=box(.05,.9,.05,chrome,-3.6+s*.35,1.35,-10.9);l.rotation.z=s*.35}box(1.4,.1,.38,black,-3.6,1.85,-10.9);box(1.3,.02,.14,M("#F2F2F2"),-3.6,1.91,-10.82);
+  const gtr=M("#B5652E",{roughness:.4});for(const gx of[-5.2,-1.9]){add(new THREE.Mesh(new THREE.SphereGeometry(.22,14,10),gtr),gx,1.35,-11.2).scale.set(1,1.15,.3);add(new THREE.Mesh(new THREE.SphereGeometry(.17,14,10),gtr),gx,1.65,-11.2).scale.set(1,1,.3);box(.06,.75,.04,M("#3A2416"),gx,2.1,-11.2);cyl(.01,.01,.5,chrome,gx,1.15,-11.05,6)}
+  for(const x of[-2.8,-.6,2.6]){cyl(.012,.012,1.6,chrome,x,1.7,-10.2,6);add(new THREE.Mesh(new THREE.SphereGeometry(.05,8,6),black),x,2.5,-10.2)}
+  for(const x of[-4,-1.5,1.5,4]){const wdg=box(.7,.35,.5,black,x,1.08,-9),q=wdg;q.rotation.x=-.4}
+  // clear acrylic pulpit and side table
+  const acr=new THREE.MeshStandardMaterial({color:"#D6E6FF",transparent:true,opacity:.35,roughness:.05,metalness:.1});
+  cyl(.05,.12,1.15,acr,-.4,1.48,-9.6,10);const top=box(.75,.04,.5,acr,-.4,2.1,-9.6);top.rotation.x=.3;
+  cyl(.03,.03,.75,chrome,.8,1.28,-9.5,8);cyl(.25,.25,.03,acr,.8,1.66,-9.5,20);
+  // stage lighting with sweeping beams
+  const sl=new THREE.SpotLight("#CFDBFF",2.2,30,.55,.6,1.2);sl.position.set(0,9.5,-4);sl.target.position.set(0,.9,-10.5);G.add(sl);G.add(sl.target);
+  const sl2=new THREE.SpotLight("#6C7BFF",1.4,30,.6,.7,1.2);sl2.position.set(-6,9,-6);sl2.target.position.set(2,.9,-11);G.add(sl2);G.add(sl2.target);
+  sweeps.push({light:sl2,base:1.4,sp:.8,ph:0});
+  for(const[x,c,rz,ph]of[[-6,"#7D8BFF",.35,0],[-2.5,"#C9D4FF",.15,1.4],[2.5,"#C9D4FF",-.15,2.6],[6,"#9A7BFF",-.35,3.7]]){
+    const g=new THREE.Group();g.position.set(x,9.6,-11.6);const cone=new THREE.Mesh(new THREE.ConeGeometry(1.1,9,24,1,true),new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:.07,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));cone.position.y=-4.5;g.add(cone);G.add(g);sweeps.push({g,rz,sp:.35+Math.random()*.2,ph})}
+  // curved theatre seating
+  const C={x:0,z:-13.5},seatGeo=new THREE.BoxGeometry(.5,.09,.46),backGeo=new THREE.BoxGeometry(.5,.62,.08),spots=[];
+  for(let r=7;r<=22;r+=1.15){const step=.64/r;for(let a=-1.2;a<=1.2;a+=step){const x=C.x+Math.sin(a)*r,z=C.z+Math.cos(a)*r;if(z>8.6||z<-7.4||Math.abs(x)>8.7)continue;if(Math.abs(x)<.55||(Math.abs(x)>3.2&&Math.abs(x)<3.95))continue;spots.push([x,z,Math.atan2(x-C.x,z-C.z)])}}
+  const seatM=new THREE.InstancedMesh(seatGeo,M("#B5582E",{roughness:.55}),spots.length),backM=new THREE.InstancedMesh(backGeo,M("#9C4A26",{roughness:.55}),spots.length);
+  const d=new THREE.Object3D(),off=new THREE.Matrix4();SEATS=[];
+  spots.forEach(([x,z,ry],i)=>{d.position.set(x,0,z);d.rotation.set(0,ry,0);d.updateMatrix();
+    seatM.setMatrixAt(i,d.matrix.clone().multiply(off.makeTranslation(0,.42,0)));backM.setMatrixAt(i,d.matrix.clone().multiply(off.makeTranslation(0,.7,.24)));
+    if(i%9===0)SEATS.push({x,z})});
+  G.add(seatM);G.add(backM);
+  // dim house lights
+  for(const[x,z]of[[-5,0],[5,0],[0,5]]){const pl=new THREE.PointLight("#FFB98A",.5,12,1.5);pl.position.set(x,4,z);G.add(pl)}},
+church(){
+  shell({bg:"#2A2E36",floor:planks("#A07850","#93704A"),wall:"#F3F0EA",ceil:"#E8E2D6",beams:M("#8A6440"),sky:"#FFFFFF",ground:"#4a4038",hemi:1,key:"#FFF4E4",keyI:1,fill:"#FFFFFF",fillI:.9,exposure:1.05,
+    sideWin:{shape:roundArch(1.5,3),map:tex(128,256,(g,w,h)=>{const r=g.createLinearGradient(0,0,0,h);r.addColorStop(0,"#DDEBF7");r.addColorStop(1,"#FFF6E2");g.fillStyle=r;g.fillRect(0,0,w,h);g.strokeStyle="#E9E3D6";g.lineWidth=6;g.beginPath();g.moveTo(w/2,0);g.lineTo(w/2,h);g.moveTo(0,h*.55);g.lineTo(w,h*.55);g.stroke();g.lineWidth=10;g.strokeRect(0,0,w,h)}),y:2.4}});
+  pewRows("#B48A5A",5);
+  const runner=add(new THREE.Mesh(new THREE.PlaneGeometry(1.8,19),M("#3F5A7A",{roughness:1})),0,.012,-2.2);runner.rotation.x=-Math.PI/2;
+  const lightWood=M("#B48A5A",{roughness:.55}),darkWood=M("#7A5634",{roughness:.55});
+  box(12,.55,3.6,M("#9A7650"),0,.275,-11.2);box(10,.3,.5,darkWood,0,.7,-9.5);
+  add(new THREE.Mesh(new THREE.PlaneGeometry(6,6.5),M("#D9CCB6",{roughness:.9})),0,4.2,-12.97);
+  box(.42,5,.3,lightWood,0,5.2,-12.8);box(2.8,.42,.3,lightWood,0,6.4,-12.8);glowSprite(0,5.6,-12.6,6,.18);
+  box(1.4,1.5,1,darkWood,0,1.3,-11.4);const lid=box(1.6,.08,1.1,darkWood,0,2.1,-11.4);lid.rotation.x=.25;
+  const bk=box(.6,.06,.45,M("#1E2A44"),0,2.18,-11.35);bk.rotation.x=.25;
+  box(2.4,.85,1,lightWood,0,.98,-8.9);box(2.5,.05,1.1,M("#FAF7F0"),0,1.42,-8.9);
+  const bl=box(.4,.05,.52,M("#F6EFDC"),-.21,1.48,-8.9);bl.rotation.z=.12;const br=box(.4,.05,.52,M("#F6EFDC"),.21,1.48,-8.9);br.rotation.z=-.12;
+  cyl(.35,.25,.3,M("#D8D2C4"),-4.5,1.25,-10.6,20);cyl(.1,.18,.9,M("#D8D2C4"),-4.5,.55,-10.6,16);
+  for(const[x,z]of[[-4,-4],[4,-4],[-4,3],[4,3]]){cyl(.45,.2,.3,M("#F4EFE4"),x,6.6,z,20);cyl(.01,.01,3,M("#555"),x,8.3,z,4);glowSprite(x,6.45,z,1.6,.45)}},
+catholic(){
+  shell({bg:"#2B2622",floor:stones("#B9AE9C","#857B6D"),wall:"#C9C0B0",ceil:"#5A4434",pillar:M("#B3A895"),beams:M("#4A3426"),sky:"#FFF4E2",ground:"#3a2e25",hemi:.75,key:"#FFE8C4",keyI:1.4,fill:"#FFF1DC",fillI:.9,exposure:1.15,
+    sideWin:{shape:lancet(1.6,3),map:stained(false),y:2.6}});
+  pewRows("#5B3A24",5);
+  const runner=add(new THREE.Mesh(new THREE.PlaneGeometry(1.8,19),M("#8E1E25",{roughness:1})),0,.012,-2.2);runner.rotation.x=-Math.PI/2;
+  box(10,.4,3.6,M("#A79C8B"),0,.2,-11);
+  const goldM=M("#D4A63A",{metalness:.75,roughness:.3});
+  add(new THREE.Mesh(new THREE.PlaneGeometry(7.5,7.5),goldM),0,4.8,-12.97);
+  shapeMesh(lancet(2.4,3.8),stained(false),-2.4,2.6,-12.95);shapeMesh(lancet(2.4,3.8),stained(false),2.4,2.6,-12.95);
+  shapeMesh(lancet(1.6,2.4),stained(true),0,6.4,-12.94);
+  // crucifix
+  const cw=M("#5A3A20",{roughness:.5}),corpus=M("#EDE2CF",{roughness:.6});
+  box(.28,4.2,.2,cw,0,4.4,-12.6);box(2.2,.28,.2,cw,0,5.6,-12.6);
+  box(.26,.85,.14,corpus,0,4.95,-12.45);add(new THREE.Mesh(new THREE.SphereGeometry(.15,14,10),corpus),.04,5.55,-12.45);
+  for(const s of[-1,1]){const arm=box(.85,.1,.1,corpus,s*.5,5.52,-12.45);arm.rotation.z=s*-.18}
+  box(.2,.8,.12,corpus,0,4.15,-12.45);
+  // tabernacle + sanctuary lamp
+  box(.9,.8,.6,goldM,0,2,-11.75);add(new THREE.Mesh(new THREE.ConeGeometry(.55,.5,4),goldM),0,2.65,-11.75).rotation.y=Math.PI/4;
+  cyl(.15,.1,.28,M("#B3202B",{emissive:"#B3202B",emissiveIntensity:.8}),-1.4,2.9,-11.6,12);cyl(.01,.01,6,M("#C9A24A"),-1.4,6,-11.6,4);glowSprite(-1.4,2.9,-11.6,1.2,.7);
+  // statues of Mary (left) and Joseph (right)
+  for(const[x,robe,veil]of[[-6.2,"#5B83C6","#F4F1EA"],[6.2,"#8A5A3B","#6E7F4E"]]){
+    box(1.6,3.4,.6,M("#E7DFD0"),x,2.1,-12.6);cyl(.35,.35,.8,M("#CFC6B5"),x,.4,-12,16);
+    cyl(.22,.4,1.5,M(robe),x,1.55,-12,16);cyl(.18,.24,.5,M(veil),x,2.4,-12,16);add(new THREE.Mesh(new THREE.SphereGeometry(.17,14,10),M("#F0D9BF")),x,2.66,-11.94);glowSprite(x,2.6,-12.2,1.6,.2)}
+  // Stations of the Cross
+  const plaque=M("#E9E1D0"),frame=M("#7A5634");
+  for(const s of[-1,1])for(const z of[-8.6,-7.2,-3.6,-1.8,1.8,3.6,7.6]){const fr=box(.08,.7,.55,frame,s*9.9,2.7,z);const pl=box(.1,.56,.42,plaque,s*9.88,2.7,z);box(.12,.3,.05,frame,s*9.86,2.72,z);box(.12,.05,.2,frame,s*9.86,2.8,z)}
+  // kneelers
+  const kneel=M("#7A2430",{roughness:.9});for(let r=0;r<5;r++)for(const s of[-1,1])box(4.4,.14,.28,kneel,s*4.1,.12,-6.4+r*2.4-.75);
+  // holy water fonts by the door
+  for(const s of[-1,1]){cyl(.1,.16,1,M("#B9AE9C"),s*1.6,.5,8.4,12);cyl(.3,.15,.18,M("#B9AE9C"),s*1.6,1.08,8.4,16)}
+  box(3.2,1,1.3,M("#5E3B22",{roughness:.5}),0,.9,-11.2);box(3.3,.06,1.4,M("#F4F1EA"),0,1.43,-11.2);box(.5,.62,1.42,M("#C9A24A",{metalness:.4}),0,1.12,-11.2);
+  const bl=box(.42,.05,.55,M("#F6EFDC"),-.22,1.5,-11.2);bl.rotation.z=.12;const br=box(.42,.05,.55,M("#F6EFDC"),.22,1.5,-11.2);br.rotation.z=-.12;
+  box(1,1.3,.8,M("#5E3B22"),4,1.05,-10.4);box(1.1,.08,.9,M("#5E3B22"),4,1.74,-10.4);
+  hangingLamps("#FFE2A8",[[-4,-4],[4,-4],[-4,3],[4,3]],6.2)},
+mosque(){
+  shell({bg:"#22303A",floor:prayerCarpet("#9E2230","#1F6B4F","#E8C27A"),wall:"#EFE6D4",ceil:"#E6DAC2",pillar:M("#F2EADB"),pillarBase:M("#C7B79A"),sky:"#FFF9EC",ground:"#3a3329",hemi:.85,key:"#FFE7C2",keyI:1.1,fill:"#FFF5E2",fillI:.9,exposure:1.1,
+    dado:starTile("#1D5E8C","#F2EADB","#E1B84B"),sideWin:{shape:horseshoe(1.5,2.3),map:jali(),y:2.4}});
+  floorRows();
+  const tile=starTile("#1D5E8C","#F2EADB","#E1B84B");tile.repeat.set(1,2);
+  shapeMesh(horseshoe(3.2,3.4),tile,0,.01,-12.96);
+  const frameM=M("#C9A24A",{metalness:.5,roughness:.4});const fr=add(new THREE.Mesh(new THREE.TorusGeometry(1.86,.12,8,40,Math.PI*1.18),frameM),0,3.68,-12.9);fr.rotation.z=-.29;
+  box(.25,3.6,.25,frameM,-1.6,1.8,-12.88);box(.25,3.6,.25,frameM,1.6,1.8,-12.88);
+  const band=add(new THREE.Mesh(new THREE.PlaneGeometry(20,.9),new THREE.MeshStandardMaterial({map:starTile("#0F4C5C","#E1B84B","#F2EADB")})),0,7.6,-12.97);
+  const mw=M("#6E4A2A",{roughness:.5});for(let i=0;i<7;i++)box(1.1,.35*(i+1),.55,mw,3.5,.175*(i+1),-12.4+i*.55);
+  box(.08,3.3,.08,mw,3,2.4,-9.3);box(.08,3.3,.08,mw,4,2.4,-9.3);const cap=cyl(0,.55,.9,M("#2E7D5B"),3.5,4.8,-12.4,4);cap.rotation.y=Math.PI/4;
+  chandelier(0,5.6,-2,2.6,24,"#FFE7B0");chandelier(0,5.8,-8,1.6,14,"#FFE7B0");
+  const dome=add(new THREE.Mesh(new THREE.SphereGeometry(4,32,16,0,Math.PI*2,0,Math.PI/2),new THREE.MeshStandardMaterial({map:starTile("#E8DCC2","#1D5E8C","#C9A24A"),side:THREE.BackSide,roughness:.9})),0,9.95,-3);dome.scale.y=.5},
+temple(){
+  shell({bg:"#160F0B",floor:planks("#61402A","#553620"),wall:"#3B2316",pillar:M("#7A2E1F",{roughness:.6}),pillarBase:M("#8C8273"),beams:M("#3B2316"),sky:"#FFE3B8",ground:"#2A1A10",hemi:.55,key:"#FFB35A",keyI:2.2,fill:"#FFCF8A",fillI:.7,exposure:1.1,
+    sideWin:{shape:new THREE.Shape([new THREE.Vector2(-1.5,0),new THREE.Vector2(1.5,0),new THREE.Vector2(1.5,2.6),new THREE.Vector2(-1.5,2.6)]),map:lattice(),y:2.1}});
+  matsGrid("#8E7A55","#6B3A25");
+  box(7,.35,3,M("#9B8F7E"),0,.175,-11.2);box(5,.5,2.2,M("#7A2E1F",{roughness:.5}),0,.6,-11.4);
+  const gold=M("#D4A63A",{metalness:.8,roughness:.3});
+  for(let i=0;i<10;i++){const p=add(new THREE.Mesh(new THREE.SphereGeometry(.35,10,8),gold),Math.cos(i/10*Math.PI*2)*1,1.0,-11.4+Math.sin(i/10*Math.PI*2)*.6);p.scale.set(1,.5,1.4)}
+  const body=add(new THREE.Mesh(new THREE.SphereGeometry(1,24,18),gold),0,1.75,-11.5);body.scale.set(1.15,.85,.75);
+  const torso=add(new THREE.Mesh(new THREE.CylinderGeometry(.5,.75,1.4,24),gold),0,2.75,-11.5);
+  add(new THREE.Mesh(new THREE.SphereGeometry(.5,24,18),gold),0,3.8,-11.45);add(new THREE.Mesh(new THREE.SphereGeometry(.2,12,10),gold),0,4.3,-11.45);
+  const halo=add(new THREE.Mesh(new THREE.TorusGeometry(1.1,.06,8,40),gold),0,3.7,-11.9);
+  glowSprite(0,3,-12,6,.3);
+  const wallArt=add(new THREE.Mesh(new THREE.PlaneGeometry(7,5),M("#6E2B1C")),0,3.5,-12.95);
+  hangingLamps("#FFC071",[[-4,-3],[4,-3],[-4,3],[4,3]],6)},
+mandir(){
+  shell({bg:"#26170F",floor:stones("#E8DCC6","#B8A98F"),wall:"#F1E3C8",ceil:"#E9D6B0",pillar:M("#D9C3A0"),pillarBase:M("#B89F7C"),sky:"#FFF2D9",ground:"#3a2a1c",hemi:.8,key:"#FFC37A",keyI:1.4,fill:"#FFE6BF",fillI:.8,exposure:1.1,
+    dado:stripes("#C4532B","#E8A33A"),sideWin:{shape:roundArch(1.4,2),map:jali(),y:2.5}});
+  matsGrid("#C4532B","#7A2E1F");
+  box(7,.4,3,M("#E0D2B8"),0,.2,-11.2);box(5,.4,2.4,M("#D7C7A9"),0,.6,-11.3);
+  const stone=M("#E6D5B4"),saffron=M("#E07B24",{roughness:.6});
+  for(const x of[-1.7,1.7])cyl(.22,.26,3.6,stone,x,2.6,-11.4);
+  box(4,.4,1.6,stone,0,4.6,-11.4);
+  const sh=cyl(0,1.9,3.2,M("#E9D2A8"),0,6.4,-11.6,8);
+  add(new THREE.Mesh(new THREE.SphereGeometry(.25,12,10),M("#D4A63A",{metalness:.8,roughness:.3})),0,8.1,-11.6);
+  box(3,3.4,.2,M("#9C2F1F",{roughness:.7}),0,2.5,-12.1);glowSprite(0,2.6,-11.9,3.2,.35);
+  const mari=M("#F2A31A",{roughness:.7}),mari2=M("#E2611B",{roughness:.7});
+  for(const[x0,x1,y]of[[-1.7,1.7,4.3],[-9,-2,7.2],[2,9,7.2]]){for(let i=0;i<=24;i++){const t=i/24,x=x0+(x1-x0)*t,yy=y-Math.sin(t*Math.PI)*.7;add(new THREE.Mesh(new THREE.SphereGeometry(.11,8,6),i%2?mari:mari2),x,yy,-11.35+(Math.abs(x0)>5?-1.5:0))}}
+  const bell=cyl(.12,.32,.45,M("#C9A24A",{metalness:.8,roughness:.25}),-3.4,3.6,-10.2,16);cyl(.01,.01,2.6,M("#7A5A2A"),-3.4,5.1,-10.2,4);
+  hangingLamps("#FFC071",[[-4,-3],[4,-3],[-4,3],[4,3]],6.2)},
+synagogue(){
+  shell({bg:"#1F2430",floor:planks("#7A5A3C","#6E5034"),wall:"#E9E2D3",ceil:"#2E3F66",pillar:M("#D9CFBC"),beams:M("#5A4330"),sky:"#F4F1FF",ground:"#2f2a24",hemi:.85,key:"#FFF0D2",keyI:1.1,fill:"#F2F0FF",fillI:.9,exposure:1.1,
+    sideWin:{shape:roundArch(1.4,2.6),map:stained(false),y:2.5}});
+  pewRows("#6B4A30",4,-4.6);
+  box(8,.5,3,M("#8B6A48"),0,.25,-11.3);
+  const ark=M("#5C3A22",{roughness:.5});box(3.6,5.4,1,ark,0,3.2,-12.4);
+  add(new THREE.Mesh(new THREE.PlaneGeometry(2.8,4.2),new THREE.MeshStandardMaterial({map:curtain(),roughness:.8})),0,3,-11.88);
+  const top=box(2.4,.9,1,ark,0,6.35,-12.4);
+  const tab=M("#F4EEDC");for(const x of[-.45,.45]){box(.75,1,.1,tab,x,7.3,-12.2);add(new THREE.Mesh(new THREE.CylinderGeometry(.375,.375,.1,20,1,false,0,Math.PI),tab),x,7.8,-12.2).rotation.x=Math.PI/2}
+  const ner=cyl(.18,.12,.3,M("#B3202B",{emissive:"#B3202B",emissiveIntensity:.6}),0,6.1,-11.3,12);cyl(.01,.01,3,M("#C9A24A"),0,7.7,-11.3,4);glowSprite(0,6.1,-11.3,1.3,.6);
+  box(3,.5,2,M("#7A5A3C"),0,.25,-7.6);const rail=M("#C9A24A",{metalness:.6,roughness:.4});for(const x of[-1.5,1.5])box(.06,.8,2,rail,x,.9,-7.6);box(3,.06,.06,rail,0,1.3,-8.6);
+  box(1.4,1.1,.9,M("#6B4A30"),0,1.05,-7.6);box(1.6,.1,1.1,M("#1F3C88"),0,1.62,-7.6);
+  chandelier(-4,6.2,-1,1.2,10,"#FFF1D0");chandelier(4,6.2,-1,1.2,10,"#FFF1D0");
+  const star=tex(256,256,(g,w,h)=>{g.fillStyle="#2E3F66";g.fillRect(0,0,w,h);g.strokeStyle="#E8C55A";g.lineWidth=10;const cx=128,cy=128,R=90;for(const f of[1,-1]){g.beginPath();for(let k=0;k<3;k++){const a=-Math.PI/2*f+k*2*Math.PI/3;g.lineTo(cx+R*Math.cos(a),cy+R*Math.sin(a)*f)}g.closePath();g.stroke()}});
+  add(new THREE.Mesh(new THREE.CircleGeometry(1.4,40),new THREE.MeshBasicMaterial({map:star})),0,8.4,-12.96)},
+gurdwara(){
+  shell({bg:"#1E2236",floor:stripes("#F3EEE4","#B9C7E0"),wall:"#F5F1E8",ceil:"#EFE8D8",pillar:M("#F3EDE0"),pillarBase:M("#D8CDB6"),sky:"#FFFFFF",ground:"#3a3530",hemi:.95,key:"#FFF0D8",keyI:1,fill:"#FFFFFF",fillI:.8,exposure:1.05,
+    dado:stripes("#1F3C88","#E8A33A"),sideWin:{shape:roundArch(1.4,2.4),map:jali(),y:2.4}});
+  floorRows();
+  box(7.5,.45,3.6,M("#E9E1CF"),0,.225,-10.9);
+  const gold=M("#D4A63A",{metalness:.7,roughness:.3});
+  for(const x of[-1.4,1.4])for(const z of[-12,-10])cyl(.08,.08,3,gold,x,1.95,z,10);
+  box(3.2,.25,2.4,gold,0,3.5,-11);const canopy=add(new THREE.Mesh(new THREE.SphereGeometry(1.4,24,12,0,Math.PI*2,0,Math.PI/2),gold),0,3.6,-11);canopy.scale.y=.7;
+  add(new THREE.Mesh(new THREE.SphereGeometry(.18,10,8),gold),0,4.7,-11);
+  box(2.4,.7,1.6,M("#E2611B",{roughness:.8}),0,.8,-11);box(2.6,.12,1.8,M("#1F3C88",{roughness:.9}),0,1.2,-11);box(1.6,.3,1,M("#C4532B",{roughness:.9}),0,1.4,-11);
+  const drape=M("#E07B24",{roughness:.9,side:THREE.DoubleSide});for(const s of[-1,1])box(.05,1.2,2.2,drape,s*1.55,2.9,-11);box(3.1,.5,.05,drape,0,3.15,-9.85);
+  glowSprite(0,2.4,-11,4,.25);
+  chandelier(0,6,-3,2.2,20,"#FFF1D0");chandelier(0,6.2,3,1.6,14,"#FFF1D0")},
+chapel(){
+  shell({bg:"#120C08",floor:planks("#61402A","#553620"),wall:"#3B2316",pillar:M("#7A2E1F",{roughness:.6}),pillarBase:M("#8C8273"),beams:M("#3B2316"),sky:"#FFE3B8",ground:"#2A1A10",hemi:.55,key:"#FFB35A",keyI:2.2,fill:"#FFCF8A",fillI:.7,exposure:1.1,
+    sideWin:{shape:new THREE.Shape([new THREE.Vector2(-1.5,0),new THREE.Vector2(1.5,0),new THREE.Vector2(1.5,2.6),new THREE.Vector2(-1.5,2.6)]),map:lattice(),y:2.1}});
+  matsGrid("#8E7A55","#6B3A25");
+  shapeMesh(roundArch(4,4),dusk(),0,1.8,-12.95);
+  box(6,.35,3,M("#9B8F7E"),0,.175,-11);box(2.8,.9,1.2,M("#5C2A1A"),0,1.15,-11.3);
+  const brass=M("#C9963E",{metalness:.7,roughness:.3});cyl(.55,.3,.28,brass,0,1.74,-11.3,24);cyl(.08,.2,.5,brass,0,1.5,-11.3,12);
+  const f=glowSprite(0,2.35,-11.3,1.3,1);f.scale.set(1.1,1.6,1);flickers.push({s:f,b:[1.1,1.6]});glowSprite(0,2.4,-11.3,5,.35);
+  hangingLamps("#FFC071",[[-4,-3],[4,-3],[-4,3],[4,3]],6)}
+};
+
+/* ---------- avatars ---------- */
+function makeAvatar(robe,skin,isMe){
+  const g=new THREE.Group();const robeMat=M(robe),trim=M("#F3E6CF",{roughness:.9}),sk=M(skin,{roughness:.65});
+  add(new THREE.Mesh(new THREE.CylinderGeometry(.36,.48,.5,20),robeMat),0,.25,0,g);
+  const upper=new THREE.Group();upper.position.y=.5;g.add(upper);
+  add(new THREE.Mesh(new THREE.CylinderGeometry(.27,.37,.46,20),robeMat),0,.22,0,upper);
+  const col=add(new THREE.Mesh(new THREE.TorusGeometry(.2,.05,8,20),trim),0,.44,0,upper);col.rotation.x=Math.PI/2;
+  add(new THREE.Mesh(new THREE.SphereGeometry(.33,24,18),sk),0,.74,0,upper);
+  const hands=add(new THREE.Mesh(new THREE.SphereGeometry(.1,12,10),sk),0,.24,-.3,upper);hands.scale.set(1.3,1,1);
+  const shm=add(new THREE.Mesh(new THREE.PlaneGeometry(1.3,1.3),new THREE.MeshBasicMaterial({map:SHADOW,transparent:true,depthWrite:false})),0,.015,0,g);shm.rotation.x=-Math.PI/2;
+  const orb=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending}));orb.scale.set(.5,.5,1);orb.position.y=1.85;orb.visible=false;g.add(orb);
+  if(isMe){const ring=add(new THREE.Mesh(new THREE.RingGeometry(.55,.66,40),new THREE.MeshBasicMaterial({color:"#F5C46F",transparent:true,opacity:.8,side:THREE.DoubleSide})),0,.03,0,g);ring.rotation.x=-Math.PI/2;
+    const lab=new THREE.Sprite(new THREE.SpriteMaterial({map:tex(128,48,(c,w,h)=>{c.fillStyle="rgba(22,15,11,.78)";c.beginPath();c.roundRect?c.roundRect(14,6,100,36,18):c.rect(14,6,100,36);c.fill();c.fillStyle="#F5C46F";c.font="bold 22px sans-serif";c.textAlign="center";c.textBaseline="middle";c.fillText("you",64,25)}),transparent:true,depthWrite:false}));lab.scale.set(.8,.3,1);lab.position.y=1.72;g.add(lab)}
+  g.userData={upper,orb,hands,bowAt:0,phase:Math.random()*6,target:{x:0,z:0}};return g}
+
+/* ---------- prayers as rising lights ---------- */
+function orbSlot(i){const r=n=>{const x=Math.sin((i+1)*n)*43758.5453;return x-Math.floor(x)};return new THREE.Vector3(-7+r(12.9)*14,5.2+r(78.2)*2.6,-10+r(39.4)*15)}
+function syncOrbs(){
+  if(!scene)return;const{counts}=amenInfo();const list=hallPrayers().sort((a,b)=>(a.createdAt||0)-(b.createdAt||0)).slice(-150);
+  while(orbs.length<list.length){const s=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending}));s.userData.home=orbSlot(orbs.length);s.position.copy(s.userData.home);scene.add(s);orbs.push(s)}
+  orbs.forEach((s,i)=>{const p=list[i];s.visible=!!p;s.userData.pid=p?p.id:null;const n=p?(counts[p.id]||0):0;s.userData.k=.42+Math.min(n,8)*.07})}
+function sendRising(){if(!scene)return;const isDove=["modern","church","catholic"].includes(F().key);
+  const s=new THREE.Sprite(new THREE.SpriteMaterial({map:isDove?DOVE:GLOW,transparent:true,depthWrite:false,blending:isDove?THREE.NormalBlending:THREE.AdditiveBlending}));
+  s.scale.set(.7,.7,1);s.position.set(me.position.x,1.6,me.position.z);scene.add(s);risers.push({s,t:0,from:s.position.clone(),dove:isDove})}
+
+/* ---------- build / switch ---------- */
+function buildFaith(){
+  if(!scene)return;
+  if(G){scene.remove(G);G.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material){(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>{if(m.map&&m.map!==GLOW&&m.map!==SHADOW)m.map.dispose();m.dispose()})}})}
+  G=new THREE.Group();scene.add(G);flickers=[];sweeps=[];HALL.minZ=F().minZ??-9.4;
+  BUILD[F().key]();
+  for(const s of orbs)scene.remove(s);orbs=[];syncOrbs();
+  const seat=SEATS[Math.floor(Math.random()*SEATS.length)];me.position.set(seat.x,0,seat.z);me.userData.target={x:seat.x,z:seat.z};me.rotation.y=0;tick.init=false;
+  for(const[,o]of others)scene.remove(o);others.clear()}
+
+const SHARE_TEXT={modern:"Share the blessing, click here to invite friends",church:"Share the blessing, click here to invite friends",catholic:"Share the blessing, click here to invite friends",mosque:"Invite others to make du'a, click here to share",temple:"Accumulate your merit, click here to share",mandir:"Share the blessings, click here to invite others",synagogue:"Share a blessing, click here to invite others",gurdwara:"Invite the sangat, click here to share",chapel:"Share the light, click here to invite others"};
+function applyFaithUI(){const f=F();$("meritText").textContent=SHARE_TEXT[f.key]||SHARE_TEXT.chapel;$("bowLabel").textContent=f.act;$("tagline").textContent=f.tag;$("placeName").textContent=f.place;$("placeSub").textContent=f.sub;
+  $("disclaim").textContent=`The companion is an AI guide, not God and not a ${f.clergy}. For pastoral care, speak with someone at your ${f.place.toLowerCase()}.`;
+  $("praySub").textContent=["modern","church","catholic"].includes(f.key)?"Your prayer is carried up by a dove and stays as a soft light in the church, and the companion answers with scripture and a prayer. It's anonymous.":"Your prayer rises as a soft light in this "+f.place.toLowerCase()+", and the companion answers with scripture and a prayer. It's anonymous.";
+  $("postBtn").textContent=S.faith==="Muslim"?"Make this du'a":"Lift this prayer";
+  const pl=$("place");pl.style.opacity="1";clearTimeout(applyFaithUI.t);applyFaithUI.t=setTimeout(()=>pl.style.opacity="0",2600);
+  showBows();renderFilters();renderWall()}
+
+$("faith").addEventListener("change",e=>{S.faith=e.target.value;store.set("lamp-faith",S.faith);applyFaithUI();buildFaith();joinHall()});
+
+/* ---------- movement ---------- */
+const keys={};
+addEventListener("keydown",e=>{if(e.target.closest&&e.target.closest("textarea,select,input"))return;keys[e.key.toLowerCase()]=true;if(e.key===" "){e.preventDefault();bowOnce()}});
+addEventListener("keyup",e=>keys[e.key.toLowerCase()]=false);
+function clampPos(x,z){return{x:Math.max(HALL.minX,Math.min(HALL.maxX,x)),z:Math.max(HALL.minZ,Math.min(HALL.maxZ,z))}}
+let down=null;
+function onPointerDown(e){down={x:e.clientX,y:e.clientY}}
+function onPointerUp(e){if(!down)return;const moved=Math.hypot(e.clientX-down.x,e.clientY-down.y);down=null;if(moved>10)return;
+  const r=renderer.domElement.getBoundingClientRect();raycaster.setFromCamera(new THREE.Vector2(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1),camera);
+  const hitO=raycaster.intersectObjects(orbs.filter(o=>o.visible))[0];
+  if(hitO){S.focusId=hitO.object.userData.pid;S.scope="here";S.filter="All";renderFilters();renderWall();openSheet("wallSheet");setTimeout(()=>{const el=$("c-"+S.focusId);if(el)el.scrollIntoView({block:"center",behavior:REDUCED?"auto":"smooth"})},60);return}
+  const hit=raycaster.intersectObject(floorPlane)[0];if(hit){me.userData.target=clampPos(hit.point.x,hit.point.z);me.userData.walking=true}}
+$("seatBtn").onclick=()=>{let best=SEATS[0],bd=1e9;for(const m of SEATS){const d=Math.hypot(m.x-me.position.x,m.z-me.position.z);if(d<bd){bd=d;best=m}}me.userData.target={x:best.x,z:best.z};me.userData.walking=true};
+
+function bowOnce(silent){me.userData.bowAt=performance.now();setPresence({bowAt:Date.now()});
+  if(F().bows){bows++;store.set("lamp-bows",bows);store.set("lamp-bows-day",today);showBows();if(!silent&&bows===108)toast("108 bows. Rest well.")}}
+$("bowBtn").onclick=()=>bowOnce();
+function bowPose(start,now){const t=(now-start)/1500;if(t<0||t>1)return 0;return Math.sin(t*Math.PI)}
+
+/* ---------- presence (one room per house of prayer) ---------- */
+let pres={act:"idle"},lastSent=0,pendingPres=false,WS=null,wsReady=false;const peersMap=new Map();
+function wsSend(m){if(WS&&WS.readyState===1)WS.send(JSON.stringify(m))}
+function setPresence(p){Object.assign(pres,p);sendPos(true)}
+function sendPos(force){if(!wsReady||!me)return;const now=performance.now();if(!force&&now-lastSent<120){pendingPres=true;return}lastSent=now;pendingPres=false;
+  wsSend({t:"p",p:{x:+me.position.x.toFixed(2),z:+me.position.z.toFixed(2),ry:+me.rotation.y.toFixed(2),col:myColor,skin:mySkin,act:pres.act||"idle",bowAt:pres.bowAt||0}})}
+function joinHall(){peersMap.clear();renderPeers();wsSend({t:"join",hall:F().key});sendPos(true)}
+function renderPeers(){if(scene){const list=[{kind:"viewer",sameTab:true,peer:"me",presence:{}}];for(const[id,p]of peersMap)list.push({kind:"viewer",sameTab:false,peer:id,presence:p});syncPeers(list)}
+  $("here").innerHTML="<b>"+Math.max(1,wsReady?(S.hereN||1):1)+"</b> here now"}
+function connectWS(){
+  WS=new WebSocket((location.protocol==="https:"?"wss:":"ws:")+"//"+location.host+"/ws");
+  WS.onopen=()=>{wsReady=true;joinHall();loadPrayers()};
+  WS.onmessage=e=>{let m;try{m=JSON.parse(e.data)}catch(_){return}
+    if(m.t==="peers"){peersMap.clear();for(const x of m.peers||[])peersMap.set(x.id,x.p);S.hereN=m.here;renderPeers()}
+    else if(m.t==="p"){peersMap.set(m.id,m.p);renderPeers()}
+    else if(m.t==="leave"){peersMap.delete(m.id);renderPeers()}
+    else if(m.t==="here"){S.hereN=m.n;renderPeers()}
+    else if(m.t==="prayer")upsertPrayer(m.prayer);
+    else if(m.t==="removed"){S.prayers=S.prayers.filter(p=>p.id!==m.id);renderWall();syncOrbs()}
+    else if(m.t==="amen"){const p=S.prayers.find(x=>x.id===m.id);if(p){p.count=m.count;renderWall();syncOrbs()}}};
+  WS.onclose=()=>{wsReady=false;peersMap.clear();renderPeers();setTimeout(connectWS,2000+Math.random()*3000)}}
+function syncPeers(list){
+  const seen=new Set();let n=0;
+  for(const p of list){if(p.kind!=="viewer")continue;n++;if(p.sameTab)continue;const pr=p.presence||{};if(typeof pr.x!=="number"||typeof pr.z!=="number")continue;
+    seen.add(p.peer);let o=others.get(p.peer);
+    if(!o){o=makeAvatar(ROBES.includes(pr.col)?pr.col:ROBES[hash(p.peer)%ROBES.length],SKIN.includes(pr.skin)?pr.skin:SKIN[hash(p.peer+"s")%SKIN.length],false);o.position.set(pr.x,0,pr.z);scene&&scene.add(o);others.set(p.peer,o)}
+    o.userData.target=clampPos(pr.x,pr.z);o.userData.ry=typeof pr.ry==="number"?pr.ry:0;
+    if(typeof pr.bowAt==="number"&&pr.bowAt!==o.userData.lastBow){o.userData.lastBow=pr.bowAt;if(Date.now()-pr.bowAt<3000)o.userData.bowAt=performance.now()}
+    o.userData.orb.visible=pr.act==="pray"}
+  for(const[k,o]of others)if(!seen.has(k)){scene&&scene.remove(o);others.delete(k)}
+  $("here").innerHTML="<b>"+Math.max(1,n)+"</b> here now"}
+
+/* ---------- loop ---------- */
+function lerpAngle(a,b,t){const d=((b-a+Math.PI)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)-Math.PI;return a+d*t}
+const camPos=new THREE.Vector3(),camLook=new THREE.Vector3();
+function tick(){
+  const dt=Math.min(clock.getDelta(),.05),now=performance.now(),ts=now/1000;
+  const kx=(keys["d"]||keys["arrowright"]?1:0)-(keys["a"]||keys["arrowleft"]?1:0),kz=(keys["s"]||keys["arrowdown"]?1:0)-(keys["w"]||keys["arrowup"]?1:0);
+  if(kx||kz){const l=Math.hypot(kx,kz);const p=clampPos(me.position.x+kx/l*3.2*dt,me.position.z+kz/l*3.2*dt);me.userData.target=p;me.position.x=p.x;me.position.z=p.z;me.rotation.y=lerpAngle(me.rotation.y,Math.atan2(-kx,-kz),.25);me.userData.walking=true;sendPos()}
+  else{const t=me.userData.target,dx=t.x-me.position.x,dz=t.z-me.position.z,d=Math.hypot(dx,dz);
+    if(d>.03){const st=Math.min(d,3*dt);me.position.x+=dx/d*st;me.position.z+=dz/d*st;me.rotation.y=lerpAngle(me.rotation.y,Math.atan2(-dx,-dz),.2);sendPos()}
+    else{if(me.userData.walking){me.userData.walking=false;sendPos(true)}me.rotation.y=lerpAngle(me.rotation.y,0,.1)}}
+  if(pendingPres)sendPos();
+  const kneel=["church","catholic"].includes(F().key),deep=S.faith==="Muslim",raise=F().key==="modern";
+  for(const a of[me,...others.values()]){const u=a.userData;
+    if(a!==me){const t=u.target;a.position.x+=(t.x-a.position.x)*Math.min(1,dt*6);a.position.z+=(t.z-a.position.z)*Math.min(1,dt*6);a.rotation.y=lerpAngle(a.rotation.y,u.ry||0,Math.min(1,dt*8))}
+    const moving=a===me&&(Math.hypot(u.target.x-a.position.x,u.target.z-a.position.z)>.05||kx||kz);
+    const b=bowPose(u.bowAt,now);
+    a.position.y=(REDUCED?0:(moving?Math.abs(Math.sin(ts*10))*.06:Math.sin(ts*1.6+u.phase)*.012))-(kneel?b*.22:deep?b*.18:0);
+    if(raise){const hb=Math.min(1,b*1.6);u.upper.rotation.x=hb*.12;u.hands.position.set(0,.24+hb*.78,-.3+hb*.18);u.hands.scale.set(1.3+hb*1.6,1,1);a.position.y+=0}
+    else{u.upper.rotation.x=-b*(kneel?.35:deep?1.25:.85);u.hands.position.set(0,.24,-.3);u.hands.scale.set(1.3,1,1)}
+    if(u.orb.visible&&!REDUCED)u.orb.position.y=1.85+Math.sin(ts*2+u.phase)*.06}
+  for(const s of orbs){if(!s.visible)continue;const h=s.userData.home,k=s.userData.k||.45,ph=s.id*.7;
+    s.position.set(h.x+(REDUCED?0:Math.sin(ts*.3+ph)*.25),h.y+(REDUCED?0:Math.sin(ts*.5+ph)*.15),h.z+(REDUCED?0:Math.cos(ts*.27+ph)*.25));
+    const pulse=REDUCED?1:1+Math.sin(ts*1.3+ph)*.08;s.scale.set(k*pulse,k*pulse,1)}
+  for(const w of sweeps){if(w.light){w.light.intensity=w.base*(REDUCED?1:.85+Math.sin(ts*w.sp+w.ph)*.15);continue}w.g.rotation.z=REDUCED?w.rz:w.rz+Math.sin(ts*w.sp+w.ph)*.35;w.g.rotation.x=REDUCED?.25:.25+Math.cos(ts*w.sp*.7+w.ph)*.15}
+  for(const f of flickers){const n=REDUCED?1:1+Math.sin(ts*9)*.06+Math.sin(ts*13.7)*.04;f.s.scale.set(f.b[0]*n,f.b[1]*(2-n),1)}
+  for(let i=risers.length-1;i>=0;i--){const R=risers[i];R.t+=dt/3;const k=Math.min(1,R.t),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+    const dest=orbs.filter(o=>o.visible).pop();const to=dest?dest.userData.home:new THREE.Vector3(0,6,-6);
+    R.s.position.lerpVectors(R.from,to,e);R.s.position.x+=Math.sin(k*Math.PI*2)*.6;
+    if(R.dove){const flap=REDUCED?1:.55+Math.abs(Math.sin(ts*12))*.45;R.s.scale.set(.8,.8*flap,1);R.s.material.opacity=k>.85?1-(k-.85)/.15:1}else R.s.scale.setScalar(.7-.25*k);
+    if(R.t>=1){scene.remove(R.s);risers.splice(i,1)}}
+  const back=innerWidth<640?10:9;camPos.set(me.position.x*.7,6.2,me.position.z+back);camLook.set(me.position.x*.85,1.4,me.position.z-5);
+  if(!tick.init){camera.position.copy(camPos);tick.init=true}else camera.position.lerp(camPos,Math.min(1,dt*3));
+  camera.lookAt(camLook);renderer.render(scene,camera);requestAnimationFrame(tick)}
+
+function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.fov=w<640?60:50;camera.updateProjectionMatrix()}
+function startHall(){
+  try{if(!window.THREE)throw 0;renderer=new THREE.WebGLRenderer({canvas:$("scene"),antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));renderer.outputEncoding=THREE.sRGBEncoding;renderer.toneMapping=THREE.ACESFilmicToneMapping}
+  catch(e){$("nogl").hidden=false;$("scene").hidden=true;$("hint").hidden=true;$("place").hidden=true;return}
+  scene=new THREE.Scene();camera=new THREE.PerspectiveCamera(50,1,.1,100);raycaster=new THREE.Raycaster();clock=new THREE.Clock();
+  GLOW=radial([[0,"rgba(255,248,225,1)"],[.25,"rgba(255,215,140,.9)"],[.6,"rgba(255,170,70,.25)"],[1,"rgba(255,150,50,0)"]]);
+  SHADOW=radial([[0,"rgba(0,0,0,.5)"],[1,"rgba(0,0,0,0)"]]);
+  DOVE=tex(128,128,(g)=>{g.fillStyle="#FFFFFF";g.shadowColor="rgba(255,240,200,.9)";g.shadowBlur=12;g.beginPath();g.ellipse(64,70,26,12,-.15,0,Math.PI*2);g.fill();
+    g.beginPath();g.moveTo(52,64);g.quadraticCurveTo(30,18,8,30);g.quadraticCurveTo(34,44,48,72);g.fill();g.beginPath();g.moveTo(70,62);g.quadraticCurveTo(96,14,120,24);g.quadraticCurveTo(96,44,78,70);g.fill();
+    g.beginPath();g.arc(90,62,9,0,Math.PI*2);g.fill();g.fillStyle="#E8A33A";g.beginPath();g.moveTo(98,60);g.lineTo(106,63);g.lineTo(98,66);g.fill();g.beginPath();g.moveTo(40,74);g.lineTo(20,86);g.lineTo(30,72);g.fill()});
+  me=makeAvatar(myColor,mySkin,true);scene.add(me);
+  buildFaith();resize();addEventListener("resize",resize);
+  const cv=$("scene");cv.addEventListener("pointerdown",onPointerDown);cv.addEventListener("pointerup",onPointerUp);
+  requestAnimationFrame(tick);setTimeout(()=>{$("hint").style.transition="opacity 1s";$("hint").style.opacity="0"},9000)}
+applyFaithUI();startHall();
+
+/* ---------- server connection ---------- */
+const DEVICE=(()=>{let d=store.get("tl-device");if(!d||!/^[A-Za-z0-9-]{16,64}$/.test(d)){d=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():(Date.now().toString(36)+Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2)).slice(0,40);store.set("tl-device",d)}return d})();
+function api(path,opt){opt=opt||{};const h={"x-device":DEVICE};if(opt.body)h["content-type"]="application/json";if(S.adminSecret)h["x-admin-secret"]=S.adminSecret;
+  return fetch(path,{method:opt.method||"GET",headers:h,body:opt.body?JSON.stringify(opt.body):undefined,signal:opt.signal})}
+async function loadPrayers(){try{const r=await api("/api/prayers");if(!r.ok)throw 0;const j=await r.json();S.prayers=j.prayers;$("status").hidden=true;renderWall();syncOrbs()}
+  catch(e){$("status").textContent="Prayers can't be reached right now. They'll appear when the connection returns.";$("status").hidden=false}}
+{const wa="https://wa.me/?text="+encodeURIComponent("Come pray with me in Thousand Lights 🙏 It's a quiet 3D house of prayer: pick your faith, lift a prayer, and others pray for you. "+location.origin+"/");$("shareBtn").href=wa;$("meritBtn").href=wa}
+(async()=>{
+  try{const c=await (await fetch("/api/config")).json();S.companion=!!c.companion}catch(e){S.companion=false}
+  if(!S.companion)$("askBtn").hidden=true;
+  if(location.hash==="#admin"){const sec=prompt("Admin secret (leave empty to sign out of admin)");if(sec){store.set("tl-admin",sec)}else{try{localStorage.removeItem("tl-admin")}catch(_){}}history.replaceState(null,"",location.pathname)}
+  S.adminSecret=store.get("tl-admin");S.admin=!!S.adminSecret;S.online=true;
+  await loadPrayers();connectWS();setInterval(renderWall,60000);
+})();
+</script>
+</body>
+</html>

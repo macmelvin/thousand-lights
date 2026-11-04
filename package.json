@@ -1,0 +1,13 @@
+{
+  "name": "thousand-lights",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A shared 3D house of prayer with an AI prayer companion.",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": "22.x" },
+  "dependencies": {
+    "better-sqlite3": "^11.10.0",
+    "ws": "^8.18.0"
+  }
+}
