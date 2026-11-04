@@ -717,10 +717,10 @@ function buildBuddha(){
   B.scale.setScalar(1.18);
   const hallG=G;
   loadBuddha().then(src=>{if(G!==hallG)return;const m=src.clone(true);
-    const bb=new THREE.Box3().setFromObject(m),sz=bb.getSize(new THREE.Vector3());const sc=Math.min(4.6/sz.y,2.45/sz.z,4.6/sz.x);m.scale.setScalar(sc);
+    const bb=new THREE.Box3().setFromObject(m),sz=bb.getSize(new THREE.Vector3());const sc=Math.min(5.2/sz.y,2.95/sz.z,4.8/sz.x);m.scale.setScalar(sc);
     bb.setFromObject(m);const c=bb.getCenter(new THREE.Vector3());m.position.set(-c.x,-bb.min.y,-c.z);
-    const holder=new THREE.Group();holder.add(m);holder.position.set(0,.88,-11.45);holder.rotation.y=BUDDHA_ROT;holder.userData.keep=true;
-    const env=buddhaEnv();m.traverse(o=>{o.userData.keep=true;if(o.isMesh&&o.material&&!o.material.userData.gilded){const mt=o.material;mt.userData.gilded=true;mt.color.setRGB(1.75,1.3,.62);mt.metalness=1;mt.roughness=.62;mt.envMap=env;mt.envMapIntensity=1.9;mt.emissive=new THREE.Color("#3A2408");mt.emissiveIntensity=.35;mt.needsUpdate=true}});
+    const holder=new THREE.Group();holder.add(m);holder.position.set(0,.88,-11.62);holder.rotation.y=BUDDHA_ROT;holder.userData.keep=true;
+    const env=buddhaEnv();m.traverse(o=>{o.userData.keep=true;if(o.isMesh&&o.material&&!o.material.userData.gilded){const mt=o.material;mt.userData.gilded=true;mt.color.setRGB(1.62,1.3,.74);mt.metalness=1;mt.roughness=.62;mt.envMap=env;mt.envMapIntensity=1.9;mt.emissive=new THREE.Color("#3A2408");mt.emissiveIntensity=.22;mt.needsUpdate=true}});
     const glow=new THREE.SpotLight("#FFD9A0",2.2,14,.45,.5,1.2);glow.position.set(0,6.5,-6.5);glow.target.position.set(0,2.4,-11.45);G.add(glow);G.add(glow.target);
     G.add(holder);B.visible=false}).catch(e=>console.warn("Statue model unavailable, using the simple figure",e));
   // altar furnishings: celadon vases with white flowers, brass candlesticks
