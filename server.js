@@ -21,6 +21,7 @@ const PUBLIC_DIR = path.join(__dirname, "public");
 
 const CATS = ["Health", "Family", "Work & study", "Exams", "Grief", "Guidance", "Gratitude", "Other"];
 const HALLS = new Set(Object.values(FAITHS).map((f) => f.key));
+const OFFERINGS = ["rice", "lantern", "incense", "flowers", "fruit", "tea"];
 
 /* ---------------- database ---------------- */
 fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -33,6 +34,8 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS prayers_created ON prayers(created_at);
   CREATE TABLE IF NOT EXISTS amens (
     pid TEXT NOT NULL, device TEXT NOT NULL, at INTEGER NOT NULL, PRIMARY KEY (pid, device));
+  CREATE TABLE IF NOT EXISTS offerings (
+    hall TEXT NOT NULL, item TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 0, last_at INTEGER, PRIMARY KEY (hall, item));
 `);
 const q = {
   list: db.prepare(`SELECT p.id, p.text, p.category, p.tradition, p.created_at AS createdAt, p.author,
@@ -46,6 +49,10 @@ const q = {
   amen: db.prepare(`INSERT OR IGNORE INTO amens (pid, device, at) VALUES (?, ?, ?)`),
   unAmen: db.prepare(`DELETE FROM amens WHERE pid = ? AND device = ?`),
   count: db.prepare(`SELECT COUNT(*) AS n FROM amens WHERE pid = ?`),
+  offer: db.prepare(`INSERT INTO offerings (hall, item, n, last_at) VALUES (?, ?, 1, ?)
+    ON CONFLICT(hall, item) DO UPDATE SET n = n + 1, last_at = excluded.last_at`),
+  offerOne: db.prepare(`SELECT n, last_at AS lastAt FROM offerings WHERE hall = ? AND item = ?`),
+  offerAll: db.prepare(`SELECT item, n, last_at AS lastAt FROM offerings WHERE hall = ?`),
 };
 
 /* ---------------- helpers ---------------- */
@@ -190,6 +197,23 @@ const server = http.createServer(async (req, res) => {
       return send(res, 201, { prayer: Object.assign({ isMine: true }, prayer) });
     }
 
+    if (p === "/api/offerings" && req.method === "GET") {
+      const hall = url.searchParams.get("hall");
+      if (!HALLS.has(hall)) return send(res, 400, { error: "hall" });
+      const totals = {}; for (const r of q.offerAll.all(hall)) totals[r.item] = { n: r.n, lastAt: r.lastAt };
+      return send(res, 200, { totals });
+    }
+    if (p === "/api/offerings" && req.method === "POST") {
+      const device = deviceOf(req); if (!device) return send(res, 400, { error: "device" });
+      if (limited("offer:" + device, 40, 600e3) || limited("offerip:" + ipOf(req), 120, 600e3)) return send(res, 429, { error: "slow_down" });
+      const b = await readJson(req);
+      if (!HALLS.has(b.hall) || !OFFERINGS.includes(b.item)) return send(res, 400, { error: "item" });
+      const now = Date.now(); q.offer.run(b.hall, b.item, now);
+      const row = q.offerOne.get(b.hall, b.item);
+      broadcast({ t: "offer", hall: b.hall, item: b.item, n: row.n, lastAt: row.lastAt });
+      return send(res, 200, { n: row.n, lastAt: row.lastAt });
+    }
+
     let m = p.match(/^\/api\/prayers\/([0-9a-f-]{36})$/);
     if (m && req.method === "DELETE") {
       const row = q.get.get(m[1]); if (!row) return send(res, 404, { error: "not_found" });
@@ -247,6 +271,7 @@ function cleanPresence(p) {
     skin: typeof p.skin === "string" && COLORS.test(p.skin) ? p.skin : "#E0B08A",
     act: p.act === "pray" ? "pray" : "idle",
     bowAt: num(p.bowAt, 0, 9e15),
+    strikeAt: num(p.strikeAt, 0, 9e15),
   };
 }
 function broadcast(msg, filter) {

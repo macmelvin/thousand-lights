@@ -71,6 +71,21 @@ select,textarea,button{font:inherit;color:inherit}
 @keyframes spark{50%{transform:scale(.6);opacity:.6}}
 @media (prefers-reduced-motion:reduce){.spark,.merit,.merit::after{animation:none}}
 @media (max-width:400px){.merit{font-size:.84rem;padding:9px 15px}}
+.bar{overflow-x:auto;scrollbar-width:none}.bar::-webkit-scrollbar{display:none}
+.offers{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+.offer{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;align-items:start;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px}
+.offer svg{grid-row:span 3;width:40px;height:40px;stroke:var(--wax);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.offer h3{margin:0;font-family:var(--display);font-weight:400;font-size:1.05rem}
+.offer h3 span{font-family:var(--body);font-size:.78rem;color:var(--muted);margin-left:6px}
+.offer p{margin:0;font-size:.84rem;color:var(--muted)}
+.offer .row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:6px}
+.offer .tot{font-size:.78rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.offer .btn{padding:6px 14px}
+.beads-wrap{display:flex;flex-direction:column;align-items:center;gap:8px}
+#beadCanvas{width:280px;height:280px;max-width:100%;touch-action:none;cursor:grab;border-radius:50%}
+.bead-count{font-family:var(--display);font-size:2rem;font-variant-numeric:tabular-nums}
+.bead-count small{font-family:var(--body);font-size:.9rem;color:var(--muted)}
+.mute{background:var(--glass);border:1px solid var(--glass-line);color:var(--hall-ink);border-radius:999px;padding:5px 10px;font-size:.85rem;cursor:pointer}
 .toast{position:fixed;left:50%;transform:translateX(-50%);top:calc(84px + env(safe-area-inset-top,0px));z-index:7;background:var(--glass);border:1px solid var(--glass-line);color:var(--hall-ink);border-radius:999px;padding:7px 16px;font-size:.9rem;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);max-width:90vw;text-align:center}
 .place{position:fixed;left:50%;top:calc(46% + env(safe-area-inset-top,0px));transform:translate(-50%,-50%);z-index:3;pointer-events:none;text-align:center;color:#fff;transition:opacity 1.2s;text-shadow:0 2px 14px rgba(0,0,0,.85)}
 .place b{display:block;font-family:var(--display);font-weight:400;font-size:clamp(1.8rem,6vw,3rem)}
@@ -165,6 +180,8 @@ textarea:focus{outline:2px solid var(--wax);outline-offset:1px}
     <span class="stat" id="here"><b>1</b> here now</span>
     <span class="stat" id="lit"><b>0</b> prayers lifted</span>
     <span class="stat" id="bows" hidden><b>0</b> / 108 bows today</span>
+    <span class="stat" id="merit" hidden>✦ <b>0</b> merit today</span>
+    <button class="mute" id="muteBtn" type="button" aria-pressed="false">Sound on</button>
   </div>
 </div>
 
@@ -174,6 +191,9 @@ textarea:focus{outline:2px solid var(--wax);outline-offset:1px}
 
 <nav class="bar" aria-label="Actions">
   <button class="act" id="bowBtn" type="button"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="2.4"/><path d="M12 8c-3 0-5 2-5 5v1h10v-1c0-3-2-5-5-5z"/><path d="M5 20h14"/><path d="M8 14l-1 6M16 14l1 6"/></svg><span id="bowLabel">Kneel</span></button>
+  <button class="act temple-only" id="moktakBtn" type="button" hidden><svg viewBox="0 0 24 24"><ellipse cx="11" cy="15" rx="7" ry="5"/><path d="M7 15h7"/><path d="M15 5l5 5"/><circle cx="20.5" cy="10.5" r="1.3"/></svg>Moktak</button>
+  <button class="act temple-only" id="beadsBtn" type="button" aria-pressed="false" hidden><svg viewBox="0 0 24 24"><circle cx="12" cy="11" r="7"/><circle cx="12" cy="4" r="1.4"/><circle cx="18.1" cy="7.5" r="1.4"/><circle cx="18.1" cy="14.5" r="1.4"/><circle cx="12" cy="18" r="1.4"/><circle cx="5.9" cy="14.5" r="1.4"/><circle cx="5.9" cy="7.5" r="1.4"/><path d="M12 18v4"/></svg>Beads</button>
+  <button class="act temple-only" id="offerBtn" type="button" aria-pressed="false" hidden><svg viewBox="0 0 24 24"><path d="M4 12h16a8 8 0 0 1-16 0z"/><path d="M8 12c0-2 1.5-3 4-3s4 1 4 3"/><path d="M9 21h6"/></svg>Offer</button>
   <button class="act" id="prayBtn" type="button" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M9 21V11l-3-3 2-2 4 4 4-4 2 2-3 3v10"/><path d="M12 10V3"/></svg>Pray</button>
   <button class="act" id="wallBtn" type="button" aria-pressed="false"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h10M7 13h10M7 17h6"/></svg>Wall</button>
   <a class="act" id="shareBtn" href="#" target="_blank" rel="noopener" aria-label="Share on WhatsApp"><svg viewBox="0 0 24 24"><path d="M4 20l1.3-3.9A8 8 0 1 1 8 19z"/><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1-1.5-2-1-1 .8a4 4 0 0 1-1.8-1.8l.8-1-1-2z"/></svg>Share</a>
@@ -204,6 +224,26 @@ textarea:focus{outline:2px solid var(--wax);outline-offset:1px}
       <p class="disclaim" id="disclaim">The companion is an AI guide, not God and not clergy.</p>
     </div>
     <p class="foot">Prayers are shared anonymously with everyone who opens this page. Leave out full names, phone numbers and other private details.</p>
+  </div>
+</section>
+
+<section class="sheet" id="offerSheet" hidden aria-labelledby="offerTitle">
+  <div class="sheet-head"><h2 id="offerTitle">Make an offering</h2><button class="close" data-close="offerSheet" type="button">Close</button></div>
+  <div class="sheet-body">
+    <p class="sub">Offerings are free. Each one appears on the altar for everyone in the temple, and lotus lanterns fill the ceiling as more people give.</p>
+    <div class="offers" id="offers"></div>
+  </div>
+</section>
+
+<section class="sheet" id="beadsSheet" hidden aria-labelledby="beadsTitle">
+  <div class="sheet-head"><h2 id="beadsTitle">Prayer beads</h2><button class="close" data-close="beadsSheet" type="button">Close</button></div>
+  <div class="sheet-body">
+    <p class="sub">Drag the beads round with your mouse or finger, or tap them, and count one bead with each breath or recitation. A full round is 108.</p>
+    <div class="beads-wrap">
+      <canvas id="beadCanvas" width="560" height="560" aria-label="A string of 108 prayer beads. Drag or tap to count." tabindex="0"></canvas>
+      <div class="bead-count" id="beadCount">0 <small>/ 108</small></div>
+      <p class="note" id="beadRounds">Rounds completed today: 0</p>
+    </div>
   </div>
 </section>
 
@@ -239,7 +279,7 @@ const SKIN=["#F2CDA6","#E0B08A","#B98258","#8A5A3B"];
 const REDUCED=matchMedia("(prefers-reduced-motion: reduce)").matches;
 const $=id=>document.getElementById(id);
 const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
-const S={faith:store.get("lamp-faith")||store.get("lamp-trad")||"Christian",cat:"Health",filter:"All",scope:"here",prayers:[],amens:[],uid:null,db:null,lobby:null,hall:null,hallUnsub:null,canWrite:true,isOwner:false,sample:null,ctl:null,confirmDel:null,focusId:null};
+const S={offerings:{},incenseTimes:[],faith:store.get("lamp-faith")||store.get("lamp-trad")||"Christian",cat:"Health",filter:"All",scope:"here",prayers:[],amens:[],uid:null,db:null,lobby:null,hall:null,hallUnsub:null,canWrite:true,isOwner:false,sample:null,ctl:null,confirmDel:null,focusId:null};
 if(!FAITHS[S.faith])S.faith="Christian";
 $("faith").value=S.faith;
 
@@ -256,7 +296,7 @@ let bows=store.get("lamp-bows-day")===today?+(store.get("lamp-bows")||0):0;
 function showBows(){$("bows").innerHTML="<b>"+bows+"</b> / 108 bows today";$("bows").hidden=!F().bows}
 
 /* panels */
-function openSheet(id){for(const s of["praySheet","wallSheet"])$(s).hidden=s!==id;
+function openSheet(id){for(const s of["praySheet","wallSheet","offerSheet","beadsSheet"])$(s).hidden=s!==id;$("offerBtn").setAttribute("aria-pressed",id==="offerSheet");$("beadsBtn").setAttribute("aria-pressed",id==="beadsSheet");if(id==="beadsSheet")drawBeads();
   $("prayBtn").setAttribute("aria-pressed",id==="praySheet");$("wallBtn").setAttribute("aria-pressed",id==="wallSheet");
   setPresence({act:id==="praySheet"?"pray":"idle"});if(id==="praySheet")setTimeout(()=>$("prayer").focus(),50)}
 function closeSheets(){openSheet(null)}
@@ -544,7 +584,7 @@ mosque(){
 temple(){
   shell({bg:"#160F0B",floor:planks("#61402A","#553620"),wall:"#3B2316",pillar:M("#7A2E1F",{roughness:.6}),pillarBase:M("#8C8273"),beams:M("#3B2316"),sky:"#FFE3B8",ground:"#2A1A10",hemi:.55,key:"#FFB35A",keyI:2.2,fill:"#FFCF8A",fillI:.7,exposure:1.1,
     sideWin:{shape:new THREE.Shape([new THREE.Vector2(-1.5,0),new THREE.Vector2(1.5,0),new THREE.Vector2(1.5,2.6),new THREE.Vector2(-1.5,2.6)]),map:lattice(),y:2.1}});
-  matsGrid("#8E7A55","#6B3A25");
+  SEATS=[];{const edge=M("#6E6A64",{roughness:.95}),top=M("#9C978E",{roughness:1});for(let r=0;r<6;r++)for(let c=0;c<8;c++){const x=-6.65+c*1.9,z=-7+r*2.15;box(1.3,.1,1.3,edge,x,.05,z);box(1.12,.08,1.12,top,x,.12,z);SEATS.push({x,z})}}
   box(7,.35,3,M("#9B8F7E"),0,.175,-11.2);box(5,.5,2.2,M("#7A2E1F",{roughness:.5}),0,.6,-11.4);
   const gold=M("#D4A63A",{metalness:.8,roughness:.3});
   for(let i=0;i<10;i++){const p=add(new THREE.Mesh(new THREE.SphereGeometry(.35,10,8),gold),Math.cos(i/10*Math.PI*2)*1,1.0,-11.4+Math.sin(i/10*Math.PI*2)*.6);p.scale.set(1,.5,1.4)}
@@ -553,8 +593,19 @@ temple(){
   add(new THREE.Mesh(new THREE.SphereGeometry(.5,24,18),gold),0,3.8,-11.45);add(new THREE.Mesh(new THREE.SphereGeometry(.2,12,10),gold),0,4.3,-11.45);
   const halo=add(new THREE.Mesh(new THREE.TorusGeometry(1.1,.06,8,40),gold),0,3.7,-11.9);
   glowSprite(0,3,-12,6,.3);
-  const wallArt=add(new THREE.Mesh(new THREE.PlaneGeometry(7,5),M("#6E2B1C")),0,3.5,-12.95);
-  hangingLamps("#FFC071",[[-4,-3],[4,-3],[-4,3],[4,3]],6)},
+  const mural=tex(768,512,(g,w,h)=>{const r=g.createLinearGradient(0,0,0,h);r.addColorStop(0,"#5A1F14");r.addColorStop(.5,"#8C3A1E");r.addColorStop(1,"#4A1810");g.fillStyle=r;g.fillRect(0,0,w,h);
+    const R=g.createRadialGradient(w/2,h*.42,20,w/2,h*.42,h*.62);R.addColorStop(0,"rgba(255,214,120,.85)");R.addColorStop(.45,"rgba(214,150,60,.45)");R.addColorStop(1,"rgba(120,50,20,0)");g.fillStyle=R;g.fillRect(0,0,w,h);
+    g.strokeStyle="rgba(255,220,140,.55)";g.lineWidth=3;for(let i=0;i<14;i++){g.beginPath();g.arc(w/2,h*.42,60+i*22,0,Math.PI*2);g.stroke()}
+    const cloud=(x,y,s)=>{g.strokeStyle="rgba(250,225,170,.8)";g.lineWidth=4;for(let k=0;k<3;k++){g.beginPath();g.arc(x+k*16*s,y,12*s,Math.PI,0);g.stroke()}g.beginPath();g.arc(x+16*s,y+6*s,26*s,Math.PI*.15,Math.PI*.85);g.stroke()};
+    for(const[x,y,s]of[[90,80,1.2],[620,70,1.3],[140,300,1],[600,320,1.1],[60,420,.9],[690,430,.9],[250,40,.8],[500,40,.8]])cloud(x,y,s);
+    const petal=(x,y,a,c)=>{g.save();g.translate(x,y);g.rotate(a);g.fillStyle=c;g.beginPath();g.ellipse(0,-18,9,20,0,0,Math.PI*2);g.fill();g.restore()};
+    for(let k=0;k<9;k++)petal(w/2,h-40,(k-4)*.32,k%2?"#E9A08F":"#F2C6A8");
+    g.strokeStyle="#D9A441";g.lineWidth=14;g.strokeRect(7,7,w-14,h-14);g.strokeStyle="#2D6E5A";g.lineWidth=6;g.strokeRect(20,20,w-40,h-40)});
+  add(new THREE.Mesh(new THREE.PlaneGeometry(9,6),new THREE.MeshBasicMaterial({map:mural})),0,3.6,-12.95);
+  // offering table in front of the altar
+  box(5,.6,.9,M("#5A2418",{roughness:.5}),0,.3,-9.9);box(5.1,.04,1,M("#D9A441",{roughness:.6}),0,.62,-9.9);
+  hangingLamps("#FFC071",[[-4,-3],[4,-3],[-4,3],[4,3]],6);
+  buildOfferings()},
 mandir(){
   shell({bg:"#26170F",floor:stones("#E8DCC6","#B8A98F"),wall:"#F1E3C8",ceil:"#E9D6B0",pillar:M("#D9C3A0"),pillarBase:M("#B89F7C"),sky:"#FFF2D9",ground:"#3a2a1c",hemi:.8,key:"#FFC37A",keyI:1.4,fill:"#FFE6BF",fillI:.8,exposure:1.1,
     dado:stripes("#C4532B","#E8A33A"),sideWin:{shape:roundArch(1.4,2),map:jali(),y:2.5}});
@@ -611,18 +662,23 @@ chapel(){
 
 /* ---------- avatars ---------- */
 function makeAvatar(robe,skin,isMe){
-  const g=new THREE.Group();const robeMat=M(robe),trim=M("#F3E6CF",{roughness:.9}),sk=M(skin,{roughness:.65});
+  const monk=F().key==="temple";
+  const g=new THREE.Group();const robeMat=M(monk?"#EEE7D7":robe),topMat=monk?M("#E2A33A",{roughness:.75}):robeMat,trim=M(monk?"#B9822C":"#F3E6CF",{roughness:.9}),sk=M(skin,{roughness:.65});
   add(new THREE.Mesh(new THREE.CylinderGeometry(.36,.48,.5,20),robeMat),0,.25,0,g);
   const upper=new THREE.Group();upper.position.y=.5;g.add(upper);
-  add(new THREE.Mesh(new THREE.CylinderGeometry(.27,.37,.46,20),robeMat),0,.22,0,upper);
+  add(new THREE.Mesh(new THREE.CylinderGeometry(.27,.37,.46,20),topMat),0,.22,0,upper);
   const col=add(new THREE.Mesh(new THREE.TorusGeometry(.2,.05,8,20),trim),0,.44,0,upper);col.rotation.x=Math.PI/2;
-  add(new THREE.Mesh(new THREE.SphereGeometry(.33,24,18),sk),0,.74,0,upper);
+  const head=add(new THREE.Mesh(new THREE.SphereGeometry(.33,24,18),sk),0,.74,0,upper);if(monk){head.scale.setScalar(1.14);head.position.y=.78}
+  let moktak=null,flash=null;
+  if(monk){moktak=new THREE.Group();const wood=M("#8A4B22",{roughness:.45});const shell=add(new THREE.Mesh(new THREE.SphereGeometry(.17,16,12),wood),0,0,0,moktak);shell.scale.set(1.2,.8,1);
+    add(new THREE.Mesh(new THREE.BoxGeometry(.3,.015,.02),M("#3A1C0C")),0,0,-.17,moktak);moktak.position.set(0,.38,-.48);g.add(moktak);
+    flash=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:0}));flash.position.set(0,.55,-.5);flash.scale.set(.6,.6,1);g.add(flash)}
   const hands=add(new THREE.Mesh(new THREE.SphereGeometry(.1,12,10),sk),0,.24,-.3,upper);hands.scale.set(1.3,1,1);
   const shm=add(new THREE.Mesh(new THREE.PlaneGeometry(1.3,1.3),new THREE.MeshBasicMaterial({map:SHADOW,transparent:true,depthWrite:false})),0,.015,0,g);shm.rotation.x=-Math.PI/2;
   const orb=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending}));orb.scale.set(.5,.5,1);orb.position.y=1.85;orb.visible=false;g.add(orb);
   if(isMe){const ring=add(new THREE.Mesh(new THREE.RingGeometry(.55,.66,40),new THREE.MeshBasicMaterial({color:"#F5C46F",transparent:true,opacity:.8,side:THREE.DoubleSide})),0,.03,0,g);ring.rotation.x=-Math.PI/2;
     const lab=new THREE.Sprite(new THREE.SpriteMaterial({map:tex(128,48,(c,w,h)=>{c.fillStyle="rgba(22,15,11,.78)";c.beginPath();c.roundRect?c.roundRect(14,6,100,36,18):c.rect(14,6,100,36);c.fill();c.fillStyle="#F5C46F";c.font="bold 22px sans-serif";c.textAlign="center";c.textBaseline="middle";c.fillText("you",64,25)}),transparent:true,depthWrite:false}));lab.scale.set(.8,.3,1);lab.position.y=1.72;g.add(lab)}
-  g.userData={upper,orb,hands,bowAt:0,phase:Math.random()*6,target:{x:0,z:0}};return g}
+  g.userData={upper,orb,hands,flash,bowAt:0,strikeAt:0,phase:Math.random()*6,target:{x:0,z:0}};return g}
 
 /* ---------- prayers as rising lights ---------- */
 function orbSlot(i){const r=n=>{const x=Math.sin((i+1)*n)*43758.5453;return x-Math.floor(x)};return new THREE.Vector3(-7+r(12.9)*14,5.2+r(78.2)*2.6,-10+r(39.4)*15)}
@@ -641,11 +697,12 @@ function buildFaith(){
   G=new THREE.Group();scene.add(G);flickers=[];sweeps=[];HALL.minZ=F().minZ??-9.4;
   BUILD[F().key]();
   for(const s of orbs)scene.remove(s);orbs=[];syncOrbs();
+  if(me)scene.remove(me);me=makeAvatar(myColor,mySkin,true);scene.add(me);
   const seat=SEATS[Math.floor(Math.random()*SEATS.length)];me.position.set(seat.x,0,seat.z);me.userData.target={x:seat.x,z:seat.z};me.rotation.y=0;tick.init=false;
   for(const[,o]of others)scene.remove(o);others.clear()}
 
 const SHARE_TEXT={modern:"Share the blessing, click here to invite friends",church:"Share the blessing, click here to invite friends",catholic:"Share the blessing, click here to invite friends",mosque:"Invite others to make du'a, click here to share",temple:"Accumulate your merit, click here to share",mandir:"Share the blessings, click here to invite others",synagogue:"Share a blessing, click here to invite others",gurdwara:"Invite the sangat, click here to share",chapel:"Share the light, click here to invite others"};
-function applyFaithUI(){const f=F();$("meritText").textContent=SHARE_TEXT[f.key]||SHARE_TEXT.chapel;$("bowLabel").textContent=f.act;$("tagline").textContent=f.tag;$("placeName").textContent=f.place;$("placeSub").textContent=f.sub;
+function applyFaithUI(){const f=F();const isTemple=f.key==="temple";document.querySelectorAll(".temple-only").forEach(e=>e.hidden=!isTemple);$("seatBtn").hidden=isTemple;$("merit").hidden=!isTemple;if(!isTemple&&(!$("offerSheet").hidden||!$("beadsSheet").hidden))closeSheets();showMerit();$("meritText").textContent=SHARE_TEXT[f.key]||SHARE_TEXT.chapel;$("bowLabel").textContent=f.act;$("tagline").textContent=f.tag;$("placeName").textContent=f.place;$("placeSub").textContent=f.sub;
   $("disclaim").textContent=`The companion is an AI guide, not God and not a ${f.clergy}. For pastoral care, speak with someone at your ${f.place.toLowerCase()}.`;
   $("praySub").textContent=["modern","church","catholic"].includes(f.key)?"Your prayer is carried up by a dove and stays as a soft light in the church, and the companion answers with scripture and a prayer. It's anonymous.":"Your prayer rises as a soft light in this "+f.place.toLowerCase()+", and the companion answers with scripture and a prayer. It's anonymous.";
   $("postBtn").textContent=S.faith==="Muslim"?"Make this du'a":"Lift this prayer";
@@ -669,7 +726,7 @@ function onPointerUp(e){if(!down)return;const moved=Math.hypot(e.clientX-down.x,
 $("seatBtn").onclick=()=>{let best=SEATS[0],bd=1e9;for(const m of SEATS){const d=Math.hypot(m.x-me.position.x,m.z-me.position.z);if(d<bd){bd=d;best=m}}me.userData.target={x:best.x,z:best.z};me.userData.walking=true};
 
 function bowOnce(silent){me.userData.bowAt=performance.now();setPresence({bowAt:Date.now()});
-  if(F().bows){bows++;store.set("lamp-bows",bows);store.set("lamp-bows-day",today);showBows();if(!silent&&bows===108)toast("108 bows. Rest well.")}}
+  if(F().bows){bows++;addMerit(1);store.set("lamp-bows",bows);store.set("lamp-bows-day",today);showBows();if(!silent&&bows===108)toast("108 bows. Rest well.")}}
 $("bowBtn").onclick=()=>bowOnce();
 function bowPose(start,now){const t=(now-start)/1500;if(t<0||t>1)return 0;return Math.sin(t*Math.PI)}
 
@@ -678,13 +735,13 @@ let pres={act:"idle"},lastSent=0,pendingPres=false,WS=null,wsReady=false;const p
 function wsSend(m){if(WS&&WS.readyState===1)WS.send(JSON.stringify(m))}
 function setPresence(p){Object.assign(pres,p);sendPos(true)}
 function sendPos(force){if(!wsReady||!me)return;const now=performance.now();if(!force&&now-lastSent<120){pendingPres=true;return}lastSent=now;pendingPres=false;
-  wsSend({t:"p",p:{x:+me.position.x.toFixed(2),z:+me.position.z.toFixed(2),ry:+me.rotation.y.toFixed(2),col:myColor,skin:mySkin,act:pres.act||"idle",bowAt:pres.bowAt||0}})}
+  wsSend({t:"p",p:{x:+me.position.x.toFixed(2),z:+me.position.z.toFixed(2),ry:+me.rotation.y.toFixed(2),col:myColor,skin:mySkin,act:pres.act||"idle",bowAt:pres.bowAt||0,strikeAt:pres.strikeAt||0}})}
 function joinHall(){peersMap.clear();renderPeers();wsSend({t:"join",hall:F().key});sendPos(true)}
 function renderPeers(){if(scene){const list=[{kind:"viewer",sameTab:true,peer:"me",presence:{}}];for(const[id,p]of peersMap)list.push({kind:"viewer",sameTab:false,peer:id,presence:p});syncPeers(list)}
   $("here").innerHTML="<b>"+Math.max(1,wsReady?(S.hereN||1):1)+"</b> here now"}
 function connectWS(){
   WS=new WebSocket((location.protocol==="https:"?"wss:":"ws:")+"//"+location.host+"/ws");
-  WS.onopen=()=>{wsReady=true;joinHall();loadPrayers()};
+  WS.onopen=()=>{wsReady=true;joinHall();loadPrayers();loadOfferings()};
   WS.onmessage=e=>{let m;try{m=JSON.parse(e.data)}catch(_){return}
     if(m.t==="peers"){peersMap.clear();for(const x of m.peers||[])peersMap.set(x.id,x.p);S.hereN=m.here;renderPeers()}
     else if(m.t==="p"){peersMap.set(m.id,m.p);renderPeers()}
@@ -692,6 +749,7 @@ function connectWS(){
     else if(m.t==="here"){S.hereN=m.n;renderPeers()}
     else if(m.t==="prayer")upsertPrayer(m.prayer);
     else if(m.t==="removed"){S.prayers=S.prayers.filter(p=>p.id!==m.id);renderWall();syncOrbs()}
+    else if(m.t==="offer"){if(m.hall==="temple"){S.offerings[m.item]={n:m.n,lastAt:m.lastAt};if(m.item==="incense")S.incenseTimes.push(Date.now());updateOfferings();renderOffers()}}
     else if(m.t==="amen"){const p=S.prayers.find(x=>x.id===m.id);if(p){p.count=m.count;renderWall();syncOrbs()}}};
   WS.onclose=()=>{wsReady=false;peersMap.clear();renderPeers();setTimeout(connectWS,2000+Math.random()*3000)}}
 function syncPeers(list){
@@ -701,6 +759,7 @@ function syncPeers(list){
     if(!o){o=makeAvatar(ROBES.includes(pr.col)?pr.col:ROBES[hash(p.peer)%ROBES.length],SKIN.includes(pr.skin)?pr.skin:SKIN[hash(p.peer+"s")%SKIN.length],false);o.position.set(pr.x,0,pr.z);scene&&scene.add(o);others.set(p.peer,o)}
     o.userData.target=clampPos(pr.x,pr.z);o.userData.ry=typeof pr.ry==="number"?pr.ry:0;
     if(typeof pr.bowAt==="number"&&pr.bowAt!==o.userData.lastBow){o.userData.lastBow=pr.bowAt;if(Date.now()-pr.bowAt<3000)o.userData.bowAt=performance.now()}
+    if(typeof pr.strikeAt==="number"&&pr.strikeAt!==o.userData.lastStrike){o.userData.lastStrike=pr.strikeAt;if(Date.now()-pr.strikeAt<3000){o.userData.strikeAt=performance.now();if(F().key==="temple")knock(.25)}}
     o.userData.orb.visible=pr.act==="pray"}
   for(const[k,o]of others)if(!seen.has(k)){scene&&scene.remove(o);others.delete(k)}
   $("here").innerHTML="<b>"+Math.max(1,n)+"</b> here now"}
@@ -724,14 +783,16 @@ function tick(){
     a.position.y=(REDUCED?0:(moving?Math.abs(Math.sin(ts*10))*.06:Math.sin(ts*1.6+u.phase)*.012))-(kneel?b*.22:deep?b*.18:0);
     if(raise){const hb=Math.min(1,b*1.6);u.upper.rotation.x=hb*.12;u.hands.position.set(0,.24+hb*.78,-.3+hb*.18);u.hands.scale.set(1.3+hb*1.6,1,1);a.position.y+=0}
     else{u.upper.rotation.x=-b*(kneel?.35:deep?1.25:.85);u.hands.position.set(0,.24,-.3);u.hands.scale.set(1.3,1,1)}
+    if(u.flash){const st=now-(u.strikeAt||0);if(st<450){const k=Math.sin(Math.min(1,st/220)*Math.PI);u.hands.position.y-=k*.14;u.upper.rotation.x-=k*.12;u.flash.material.opacity=1-st/450;const sc=.4+st/450*.9;u.flash.scale.set(sc,sc,1)}else u.flash.material.opacity=0}
     if(u.orb.visible&&!REDUCED)u.orb.position.y=1.85+Math.sin(ts*2+u.phase)*.06}
+  animateOfferings(ts);
   for(const s of orbs){if(!s.visible)continue;const h=s.userData.home,k=s.userData.k||.45,ph=s.id*.7;
     s.position.set(h.x+(REDUCED?0:Math.sin(ts*.3+ph)*.25),h.y+(REDUCED?0:Math.sin(ts*.5+ph)*.15),h.z+(REDUCED?0:Math.cos(ts*.27+ph)*.25));
     const pulse=REDUCED?1:1+Math.sin(ts*1.3+ph)*.08;s.scale.set(k*pulse,k*pulse,1)}
   for(const w of sweeps){if(w.light){w.light.intensity=w.base*(REDUCED?1:.85+Math.sin(ts*w.sp+w.ph)*.15);continue}w.g.rotation.z=REDUCED?w.rz:w.rz+Math.sin(ts*w.sp+w.ph)*.35;w.g.rotation.x=REDUCED?.25:.25+Math.cos(ts*w.sp*.7+w.ph)*.15}
   for(const f of flickers){const n=REDUCED?1:1+Math.sin(ts*9)*.06+Math.sin(ts*13.7)*.04;f.s.scale.set(f.b[0]*n,f.b[1]*(2-n),1)}
   for(let i=risers.length-1;i>=0;i--){const R=risers[i];R.t+=dt/3;const k=Math.min(1,R.t),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
-    const dest=orbs.filter(o=>o.visible).pop();const to=dest?dest.userData.home:new THREE.Vector3(0,6,-6);
+    const dest=orbs.filter(o=>o.visible).pop();const to=R.to||(dest?dest.userData.home:new THREE.Vector3(0,6,-6));
     R.s.position.lerpVectors(R.from,to,e);R.s.position.x+=Math.sin(k*Math.PI*2)*.6;
     if(R.dove){const flap=REDUCED?1:.55+Math.abs(Math.sin(ts*12))*.45;R.s.scale.set(.8,.8*flap,1);R.s.material.opacity=k>.85?1-(k-.85)/.15:1}else R.s.scale.setScalar(.7-.25*k);
     if(R.t>=1){scene.remove(R.s);risers.splice(i,1)}}
@@ -753,6 +814,103 @@ function startHall(){
   buildFaith();resize();addEventListener("resize",resize);
   const cv=$("scene");cv.addEventListener("pointerdown",onPointerDown);cv.addEventListener("pointerup",onPointerUp);
   requestAnimationFrame(tick);setTimeout(()=>{$("hint").style.transition="opacity 1s";$("hint").style.opacity="0"},9000)}
+
+/* ---------- temple rituals ---------- */
+let AC=null,muted=store.get("tl-muted")==="1";
+function audio(){if(muted)return null;try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();if(AC.state==="suspended")AC.resume();return AC}catch(e){return null}}
+function showMute(){$("muteBtn").textContent=muted?"Sound off":"Sound on";$("muteBtn").setAttribute("aria-pressed",muted?"true":"false")}
+$("muteBtn").onclick=()=>{muted=!muted;store.set("tl-muted",muted?"1":"0");showMute()};showMute();
+function knock(vol){const a=audio();if(!a)return;const t=a.currentTime,v=vol??.9;
+  const len=Math.floor(a.sampleRate*.12),buf=a.createBuffer(1,len,a.sampleRate),d=buf.getChannelData(0);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,6);
+  const n=a.createBufferSource();n.buffer=buf;const bp=a.createBiquadFilter();bp.type="bandpass";bp.frequency.value=1150;bp.Q.value=3.5;const gn=a.createGain();gn.gain.value=v*1.6;n.connect(bp).connect(gn).connect(a.destination);n.start(t);
+  const o=a.createOscillator();o.type="sine";o.frequency.setValueAtTime(560,t);o.frequency.exponentialRampToValueAtTime(380,t+.12);const og=a.createGain();og.gain.setValueAtTime(v*.55,t);og.gain.exponentialRampToValueAtTime(.001,t+.16);o.connect(og).connect(a.destination);o.start(t);o.stop(t+.18)}
+function tick2(){const a=audio();if(!a)return;const t=a.currentTime,o=a.createOscillator(),g=a.createGain();o.type="triangle";o.frequency.value=2300;g.gain.setValueAtTime(.12,t);g.gain.exponentialRampToValueAtTime(.001,t+.04);o.connect(g).connect(a.destination);o.start(t);o.stop(t+.05)}
+function chime(){const a=audio();if(!a)return;const t=a.currentTime;for(const[f,v]of[[880,.25],[1320,.12],[1760,.06]]){const o=a.createOscillator(),g=a.createGain();o.type="sine";o.frequency.value=f;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+2.2);o.connect(g).connect(a.destination);o.start(t);o.stop(t+2.3)}}
+
+const MERIT_KEY="tl-merit-"+new Date().toDateString();
+let merit=+(store.get(MERIT_KEY)||0);
+function addMerit(n){merit+=n;store.set(MERIT_KEY,merit);showMerit()}
+function showMerit(){$("merit").innerHTML="✦ <b>"+merit+"</b> merit today"}
+
+let strikes=0;
+$("moktakBtn").onclick=()=>{knock();me.userData.strikeAt=performance.now();setPresence({strikeAt:Date.now()});strikes++;addMerit(1)};
+addEventListener("keydown",e=>{if(F().key==="temple"&&(e.key==="m"||e.key==="M")&&!(e.target.closest&&e.target.closest("textarea,select,input"))){$("moktakBtn").click()}});
+
+/* prayer beads */
+const BEAD_KEY="tl-beads-"+new Date().toDateString();
+let beadTotal=+(store.get(BEAD_KEY)||0),beadAngle=0,beadAcc=0,beadDrag=null;const BEAD_STEP=Math.PI*2/27;
+function beadCountUp(n){for(let i=0;i<n;i++){beadTotal++;tick2();addMerit(1);if(beadTotal%108===0){chime();toast("A full round of 108 beads. Well done.")}}store.set(BEAD_KEY,beadTotal);showBeads()}
+function showBeads(){$("beadCount").innerHTML=(beadTotal%108)+" <small>/ 108</small>";$("beadRounds").textContent="Rounds completed today: "+Math.floor(beadTotal/108)}
+function drawBeads(){const c=$("beadCanvas"),g=c.getContext("2d"),W=c.width,cx=W/2,cy=W/2,R=W*.38;g.clearRect(0,0,W,W);
+  g.strokeStyle="rgba(140,90,40,.6)";g.lineWidth=3;g.beginPath();g.arc(cx,cy,R,0,Math.PI*2);g.stroke();
+  for(let i=0;i<27;i++){const a=beadAngle+i*BEAD_STEP-Math.PI/2,x=cx+Math.cos(a)*R,y=cy+Math.sin(a)*R,big=((Math.round(-beadAngle/BEAD_STEP)+i)%27+27)%27===0,r=big?W*.05:W*.034;
+    const gr=g.createRadialGradient(x-r*.35,y-r*.35,r*.1,x,y,r);gr.addColorStop(0,big?"#F1C46B":"#C98A4E");gr.addColorStop(1,big?"#8A5A16":"#5E3218");g.fillStyle=gr;g.beginPath();g.arc(x,y,r,0,Math.PI*2);g.fill()}
+  g.fillStyle="#B5761A";g.beginPath();g.moveTo(cx-10,cy-R-W*.07);g.lineTo(cx+10,cy-R-W*.07);g.lineTo(cx,cy-R-W*.03);g.fill()}
+{const c=$("beadCanvas");const ang=e=>{const r=c.getBoundingClientRect();return Math.atan2(e.clientY-r.top-r.height/2,e.clientX-r.left-r.width/2)};
+  c.addEventListener("pointerdown",e=>{c.setPointerCapture(e.pointerId);beadDrag={a:ang(e),moved:0};c.style.cursor="grabbing"});
+  c.addEventListener("pointermove",e=>{if(!beadDrag)return;let a=ang(e),d=a-beadDrag.a;if(d>Math.PI)d-=Math.PI*2;if(d<-Math.PI)d+=Math.PI*2;beadDrag.a=a;beadDrag.moved+=Math.abs(d);beadAngle+=d;beadAcc+=Math.abs(d);const n=Math.floor(beadAcc/BEAD_STEP);if(n){beadAcc-=n*BEAD_STEP;beadCountUp(n)}drawBeads()});
+  const up=()=>{if(beadDrag&&beadDrag.moved<.05){beadAngle-=BEAD_STEP;beadCountUp(1);drawBeads()}beadDrag=null;c.style.cursor="grab"};
+  c.addEventListener("pointerup",up);c.addEventListener("pointercancel",()=>{beadDrag=null});
+  c.addEventListener("wheel",e=>{e.preventDefault();beadAngle-=Math.sign(e.deltaY)*BEAD_STEP;beadCountUp(1);drawBeads()},{passive:false});
+  c.addEventListener("keydown",e=>{if(e.key===" "||e.key==="Enter"||e.key==="ArrowRight"){e.preventDefault();beadAngle-=BEAD_STEP;beadCountUp(1);drawBeads()}})}
+$("beadsBtn").onclick=()=>$("beadsSheet").hidden?openSheet("beadsSheet"):closeSheets();
+showBeads();
+
+/* offerings */
+const ITEMS=[
+  {id:"rice",name:"Rice",ko:"쌀 공양",desc:"The traditional temple gift: a bowl of rice for the Buddha and the community.",icon:'<path d="M4 12h16a8 8 0 0 1-16 0z"/><path d="M7 12c0-2.5 2.2-4 5-4s5 1.5 5 4"/><path d="M9 21h6"/>'},
+  {id:"lantern",name:"Lotus lantern",ko:"연등",desc:"Hangs a glowing lotus lantern above the hall to light the way for you and those you love.",icon:'<path d="M12 4v2"/><path d="M6 12c0-3 3-6 6-6s6 3 6 6-3 6-6 6-6-3-6-6z"/><path d="M12 6c-1.5 2-1.5 10 0 12M12 6c1.5 2 1.5 10 0 12"/><path d="M12 18v3"/>'},
+  {id:"incense",name:"Incense",ko:"향",desc:"A stick of incense whose fragrance carries your intention upward.",icon:'<path d="M5 20h14l-1.5-5h-11z"/><path d="M12 15V5"/><path d="M12 5c-1.5-1 1.5-2 0-3"/>'},
+  {id:"flowers",name:"Flowers",ko:"꽃",desc:"Fresh flowers, a gentle reminder that all things change.",icon:'<circle cx="12" cy="7" r="3"/><path d="M12 10v11"/><path d="M12 15c-3 0-5-2-5-4 2 0 5 1 5 4zM12 17c3 0 5-2 5-4-2 0-5 1-5 4"/>'},
+  {id:"fruit",name:"Fruit",ko:"과일",desc:"A gift of fruit, shared in gratitude.",icon:'<circle cx="12" cy="14" r="6"/><path d="M12 8c0-2 1-3 3-4"/><path d="M12 8c-2-1-4 0-4 0"/>'},
+  {id:"tea",name:"Tea",ko:"차",desc:"A cup of tea offered with a quiet mind.",icon:'<path d="M5 9h11v5a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5z"/><path d="M16 10h1.5a2.5 2.5 0 0 1 0 5H16"/><path d="M9 3c-1 1 1 2 0 3M12 3c-1 1 1 2 0 3"/>'}];
+function renderOffers(){$("offers").replaceChildren(...ITEMS.map(it=>{const d=document.createElement("article");d.className="offer";const n=(S.offerings[it.id]||{}).n||0;
+  d.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true">'+it.icon+'</svg><h3></h3><p></p><div class="row"><span class="tot"></span><button class="btn primary" type="button">Offer</button></div>';
+  d.querySelector("h3").textContent=it.name;const k=document.createElement("span");k.textContent=it.ko;d.querySelector("h3").append(k);d.querySelector("p").textContent=it.desc;
+  d.querySelector(".tot").textContent=n.toLocaleString()+" offered";d.querySelector("button").onclick=e=>makeOffering(it,e.currentTarget);return d}))}
+async function makeOffering(it,btn){btn.disabled=true;
+  try{const r=await api("/api/offerings",{method:"POST",body:{hall:"temple",item:it.id}});if(r.status===429){toast("Please rest a moment before offering again.");return}if(!r.ok)throw 0;const j=await r.json();
+    S.offerings[it.id]={n:j.n,lastAt:j.lastAt};if(it.id==="incense")S.incenseTimes.push(Date.now());chime();addMerit(10);flyOffering(it.id);updateOfferings();renderOffers();
+    toast(it.name+" offered. ✦ +10 merit")}catch(e){toast("That offering didn't go through. Try again.")}finally{btn.disabled=false}}
+$("offerBtn").onclick=()=>$("offerSheet").hidden?openSheet("offerSheet"):closeSheets();
+async function loadOfferings(){try{const r=await api("/api/offerings?hall=temple");if(!r.ok)return;const j=await r.json();S.offerings=j.totals||{};updateOfferings();renderOffers()}catch(e){}}
+
+/* offerings in the 3D temple */
+let OFF=null,SMOKE=null;
+function buildOfferings(){if(!SMOKE)SMOKE=radial([[0,"rgba(235,230,222,.55)"],[1,"rgba(235,230,222,0)"]]);
+  const P=new THREE.Group();G.add(P);OFF={};
+  const ceramic=M("#F2EDE2",{roughness:.4}),brass=M("#B88A3A",{metalness:.7,roughness:.35});
+  cyl(.32,.2,.22,ceramic,-1.8,.75,-9.9,20,P);OFF.rice=add(new THREE.Mesh(new THREE.SphereGeometry(.3,20,12,0,Math.PI*2,0,Math.PI/2),M("#FBF8F0",{roughness:1})),-1.8,.86,-9.9,P);
+  cyl(.42,.36,.05,brass,-.6,.66,-9.9,24,P);OFF.fruit=[];const fc=["#E8742C","#D8352A","#F2B33A","#7FB04A"];let k=0;
+  for(const[layer,cnt,rad]of[[0,7,.26],[1,5,.17],[2,2,.08],[3,1,0]])for(let i=0;i<cnt;i++){const a=i/cnt*Math.PI*2;const f=add(new THREE.Mesh(new THREE.SphereGeometry(.1,12,10),M(fc[k++%4],{roughness:.5})),-.6+Math.cos(a)*rad,.75+layer*.13,-9.9+Math.sin(a)*rad,P);f.visible=false;OFF.fruit.push(f)}
+  cyl(.12,.16,.4,M("#2E6E8E",{roughness:.3}),.6,.82,-9.9,16,P);OFF.flowers=[];const flc=["#F5A6C0","#FFFFFF","#F7D04A","#E8556A"];
+  for(let i=0;i<12;i++){const a=i*2.4,h=.35+(i%4)*.09,r=.06+(i%3)*.06;const st=cyl(.008,.008,h,M("#4F7A35"),.6+Math.cos(a)*r*.5,1.02+h/2,-9.9+Math.sin(a)*r*.5,4,P);const bl=add(new THREE.Mesh(new THREE.SphereGeometry(.07,10,8),M(flc[i%4],{roughness:.6})),.6+Math.cos(a)*r,1.02+h,-9.9+Math.sin(a)*r,P);st.visible=bl.visible=false;OFF.flowers.push([st,bl])}
+  OFF.tea=[];for(let i=0;i<8;i++){const c=cyl(.06,.05,.09,ceramic,1.35+(i%4)*.3,.69,-9.75-Math.floor(i/4)*.28,12,P);c.visible=false;OFF.tea.push(c)}
+  cyl(.3,.24,.3,brass,0,.15,-8.95,20,P);cyl(.34,.34,.04,brass,0,.31,-8.95,20,P);OFF.sticks=[];
+  for(let i=0;i<9;i++){const a=i/9*Math.PI*2,r=i?.13:0;const st=cyl(.01,.01,.5,M("#7A3A1E"),Math.cos(a)*r,.56,-8.95+Math.sin(a)*r,4,P);const tip=glowSprite(Math.cos(a)*r,.82,-8.95+Math.sin(a)*r,.12,.9,P);st.visible=tip.visible=false;OFF.sticks.push([st,tip])}
+  OFF.smoke=[];for(let i=0;i<14;i++){const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:SMOKE,transparent:true,depthWrite:false,opacity:0}));sp.userData.ph=i/14;add(sp,0,1,-8.95,P);OFF.smoke.push(sp)}
+  OFF.lanterns=[];const lc=["#F7A6C1","#FFF4E8","#F2665E","#F9D36A","#C9A0F0"];
+  for(let i=0;i<72;i++){const row=Math.floor(i/12),col=i%12;const lg=new THREE.Group();const mat=new THREE.MeshBasicMaterial({color:lc[(i*7)%5]});
+    const body=add(new THREE.Mesh(new THREE.SphereGeometry(.26,12,10),mat),0,0,0,lg);body.scale.set(1,.85,1);
+    for(let p=0;p<6;p++){const pe=add(new THREE.Mesh(new THREE.ConeGeometry(.08,.22,6),mat),Math.cos(p)*.22,.12,Math.sin(p)*.22,lg);pe.rotation.z=-Math.cos(p)*.6;pe.rotation.x=Math.sin(p)*.6}
+    add(new THREE.Mesh(new THREE.CylinderGeometry(.006,.006,1,4),M("#3a2a1a")),0,.75,0,lg);
+    const gl=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:.45}));gl.scale.set(1.1,1.1,1);lg.add(gl);
+    lg.position.set(-7.15+col*1.3+(row%2)*.65,7.3+((i*13)%5)*.18,-8.6+row*2.7);lg.visible=false;lg.userData.ph=i*.37;add(lg,lg.position.x,lg.position.y,lg.position.z,P);OFF.lanterns.push(lg)}
+  updateOfferings()}
+function shown(n,max){return Math.min(max,n<=0?0:Math.ceil(Math.log2(n+1)*max/Math.log2(max*4+1)))}
+function updateOfferings(){if(!OFF||F().key!=="temple")return;const n=id=>(S.offerings[id]||{}).n||0;
+  const r=n("rice");OFF.rice.visible=r>0;const s=.35+Math.min(1,Math.log10(r+1)/3)*.75;OFF.rice.scale.set(s,s*1.1,s);
+  OFF.fruit.forEach((f,i)=>f.visible=i<shown(n("fruit"),15));OFF.flowers.forEach(([a,b],i)=>a.visible=b.visible=i<shown(n("flowers"),12));
+  OFF.tea.forEach((c,i)=>c.visible=i<shown(n("tea"),8));OFF.sticks.forEach(([a,b],i)=>a.visible=b.visible=i<shown(n("incense"),9));
+  const L=n("lantern");OFF.lanterns.forEach((l,i)=>l.visible=i<Math.min(72,L))}
+function animateOfferings(ts){if(!OFF||F().key!=="temple")return;
+  const recent=S.incenseTimes.filter(t=>Date.now()-t<600000).length,lit=(S.offerings.incense||{}).n>0;const lvl=lit?Math.min(1,.25+recent*.15):0;
+  for(const sp of OFF.smoke){const k=(ts*.12+sp.userData.ph)%1;sp.position.set(Math.sin(ts*.7+sp.userData.ph*9)*.12*k*3,.9+k*2.6,-8.95+Math.cos(ts*.5+sp.userData.ph*7)*.08*k*3);const sc=.25+k*1.1;sp.scale.set(sc,sc,1);sp.material.opacity=REDUCED?lvl*.25:lvl*.45*Math.sin(k*Math.PI)}
+  if(!REDUCED)for(const l of OFF.lanterns)if(l.visible)l.rotation.y=Math.sin(ts*.4+l.userData.ph)*.3}
+function flyOffering(id){if(!scene||!me)return;const spots={rice:[-1.8,1,-9.9],fruit:[-.6,1,-9.9],flowers:[.6,1.3,-9.9],tea:[1.8,.9,-9.8],incense:[0,.9,-8.95]};
+  let to;if(id==="lantern"){const L=OFF&&OFF.lanterns[Math.min(71,((S.offerings.lantern||{}).n||1)-1)];to=L?L.position.clone():new THREE.Vector3(0,7.5,-4)}else to=new THREE.Vector3(...(spots[id]||[0,1,-9.9]));
+  const s=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending}));s.scale.set(.6,.6,1);s.position.set(me.position.x,1.5,me.position.z);scene.add(s);risers.push({s,t:0,from:s.position.clone(),to,dove:false})}
+
 applyFaithUI();startHall();
 
 /* ---------- server connection ---------- */

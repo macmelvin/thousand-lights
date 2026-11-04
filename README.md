@@ -1,6 +1,6 @@
 # Thousand Lights
 
-A shared 3D house of prayer. Visitors pick their faith (church, Catholic church, mosque, temple, mandir, synagogue, gurdwara or an open chapel), walk around as a small figure, see who else is there live, lift prayers that float as lights, tap "I prayed" for others, and get a reply from an AI prayer companion that answers with scripture, a short prayer and encouragement. The companion is a guide, never God.
+A shared 3D house of prayer. Visitors pick their faith (church, Catholic church, mosque, temple, mandir, synagogue, gurdwara or an open chapel), walk around as a small figure (child monks in the temple, with moktak, 108 prayer beads and free offerings of rice, lotus lanterns, incense, flowers, fruit and tea), see who else is there live, lift prayers that float as lights, tap "I prayed" for others, and get a reply from an AI prayer companion that answers with scripture, a short prayer and encouragement. The companion is a guide, never God.
 
 ## Run locally
 
