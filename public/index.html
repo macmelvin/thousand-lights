@@ -224,6 +224,7 @@ textarea:focus{outline:2px solid var(--wax);outline-offset:1px}
       <p class="disclaim" id="disclaim">The companion is an AI guide, not God and not clergy.</p>
     </div>
     <p class="foot">Prayers are shared anonymously with everyone who opens this page. Leave out full names, phone numbers and other private details.</p>
+    <p class="foot">The temple's Buddha is a 3D scan of a gilded wooden Seated Buddha from Japan's Heian period (1100s), courtesy of the Cleveland Museum of Art (CC0).</p>
   </div>
 </section>
 
@@ -259,6 +260,7 @@ textarea:focus{outline:2px solid var(--wax);outline-offset:1px}
 </section>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <script>
 /* ===================== FAITH DEFINITIONS ===================== */
 const FAITHS={
@@ -619,6 +621,15 @@ chapel(){
   hangingLamps("#FFC071",[[-4,-3],[4,-3],[-4,3],[4,3]],6)}
 };
 
+/* ---------- scanned statue: "Seated Buddha", Japan, Heian period, 1100s, gilded wood.
+   Cleveland Museum of Art 1973.85, released CC0. ---------- */
+const BUDDHA_ROT=0;let BUDDHA_P=null,BUDDHA_ENV=null;
+function loadBuddha(){if(BUDDHA_P)return BUDDHA_P;BUDDHA_P=new Promise((res,rej)=>{if(!THREE.GLTFLoader)return rej(new Error("no loader"));new THREE.GLTFLoader().load("/models/buddha.glb",g=>res(g.scene),undefined,rej)});return BUDDHA_P}
+function buddhaEnv(){if(BUDDHA_ENV)return BUDDHA_ENV;const pm=new THREE.PMREMGenerator(renderer),es=new THREE.Scene();
+  es.add(new THREE.Mesh(new THREE.SphereGeometry(10,32,16),new THREE.MeshBasicMaterial({side:THREE.BackSide,map:tex(64,256,(g,w,h)=>{const r=g.createLinearGradient(0,0,0,h);r.addColorStop(0,"#FFE9C4");r.addColorStop(.45,"#B8743A");r.addColorStop(.6,"#4A2A16");r.addColorStop(1,"#1A0E08");g.fillStyle=r;g.fillRect(0,0,w,h)})})));
+  for(const[c,x,y,z,sz]of[["#FFE6B8",-5,5,6,5],["#FFC77A",6,2,5,4],["#FFF4DE",0,8,1,4]]){const pl=new THREE.Mesh(new THREE.PlaneGeometry(sz,sz),new THREE.MeshBasicMaterial({color:c,side:THREE.DoubleSide}));pl.position.set(x,y,z);pl.lookAt(0,0,0);es.add(pl)}
+  BUDDHA_ENV=pm.fromScene(es,.02).texture;pm.dispose();return BUDDHA_ENV}
+
 /* ---------- seated Buddha for the temple ---------- */
 function hillsView(){return tex(256,256,(g,w,h)=>{const sk=g.createLinearGradient(0,0,0,h);sk.addColorStop(0,"#BFD3DC");sk.addColorStop(.55,"#E6E2C8");sk.addColorStop(1,"#A9B58A");g.fillStyle=sk;g.fillRect(0,0,w,h);
   for(const[y,c,a]of[[130,"#7F9A72",.9],[150,"#5F7D55",1],[175,"#45613F",1]]){g.fillStyle=c;g.globalAlpha=a;g.beginPath();g.moveTo(0,h);for(let x=0;x<=w;x+=8)g.lineTo(x,y+Math.sin(x*.025+y)*18+Math.sin(x*.07)*6);g.lineTo(w,h);g.fill()}g.globalAlpha=1;
@@ -704,6 +715,13 @@ function buildBuddha(){
   const fill=new THREE.PointLight("#FFC27A",.7,7,1.5);fill.position.set(1.8,1.4,1.8);B.add(fill);
   const rim=new THREE.PointLight("#FFE2B0",.9,4,1.5);rim.position.set(0,3.2,-.9);B.add(rim);
   B.scale.setScalar(1.18);
+  const hallG=G;
+  loadBuddha().then(src=>{if(G!==hallG)return;const m=src.clone(true);
+    const bb=new THREE.Box3().setFromObject(m),sz=bb.getSize(new THREE.Vector3());const sc=Math.min(4.7/sz.y,2.3/sz.z,4.6/sz.x);m.scale.setScalar(sc);
+    bb.setFromObject(m);const c=bb.getCenter(new THREE.Vector3());m.position.set(-c.x,-bb.min.y,-c.z);
+    const holder=new THREE.Group();holder.add(m);holder.position.set(0,.88,-11.45);holder.rotation.y=BUDDHA_ROT;holder.userData.keep=true;
+    const env=buddhaEnv();m.traverse(o=>{o.userData.keep=true;if(o.isMesh&&o.material){o.material.envMap=env;o.material.envMapIntensity=1.15;o.material.needsUpdate=true}});
+    G.add(holder);B.visible=false}).catch(e=>console.warn("Statue model unavailable, using the simple figure",e));
   // altar furnishings: celadon vases with white flowers, brass candlesticks
   const cel=M("#9FBFA6",{roughness:.25}),brass=M("#B88A3A",{metalness:.7,roughness:.3}),white=M("#F7F3EA",{roughness:.6});
   for(const s of[-1,1]){const vp=[[0,0],[.12,0],[.16,.1],[.11,.3],[.07,.38],[.1,.46],[0,.46]].map(([x,y])=>new THREE.Vector2(x,y));
@@ -745,7 +763,7 @@ function sendRising(){if(!scene)return;const isDove=["modern","church","catholic
 /* ---------- build / switch ---------- */
 function buildFaith(){
   if(!scene)return;
-  if(G){scene.remove(G);G.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material){(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>{if(m.map&&m.map!==GLOW&&m.map!==SHADOW)m.map.dispose();m.dispose()})}})}
+  if(G){scene.remove(G);G.traverse(o=>{if(o.userData.keep)return;if(o.geometry)o.geometry.dispose();if(o.material){(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>{if(m.map&&m.map!==GLOW&&m.map!==SHADOW)m.map.dispose();m.dispose()})}})}
   G=new THREE.Group();scene.add(G);flickers=[];sweeps=[];HALL.minZ=F().minZ??-9.4;
   BUILD[F().key]();
   for(const s of orbs)scene.remove(s);orbs=[];syncOrbs();

@@ -154,14 +154,14 @@ async function streamCompanion(prompt, onText, signal) {
 }
 
 /* ---------------- static files ---------------- */
-const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".svg": "image/svg+xml", ".png": "image/png", ".ico": "image/x-icon", ".webmanifest": "application/manifest+json" };
+const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".svg": "image/svg+xml", ".png": "image/png", ".ico": "image/x-icon", ".glb": "model/gltf-binary", ".webmanifest": "application/manifest+json" };
 function serveStatic(req, res, pathname) {
   const rel = pathname === "/" ? "/index.html" : pathname;
   const file = path.normalize(path.join(PUBLIC_DIR, rel));
   if (!file.startsWith(PUBLIC_DIR)) { res.writeHead(403); return res.end(); }
   fs.readFile(file, (err, buf) => {
     if (err) { res.writeHead(404, { "Content-Type": "text/plain" }); return res.end("Not found"); }
-    res.writeHead(200, { "Content-Type": TYPES[path.extname(file)] || "application/octet-stream", "Cache-Control": rel === "/index.html" ? "no-cache" : "public, max-age=3600",
+    res.writeHead(200, { "Content-Type": TYPES[path.extname(file)] || "application/octet-stream", "Cache-Control": rel === "/index.html" ? "no-cache" : rel.startsWith("/models/") ? "public, max-age=604800" : "public, max-age=3600",
       "X-Content-Type-Options": "nosniff", "Referrer-Policy": "strict-origin-when-cross-origin" });
     res.end(buf);
   });
