@@ -467,47 +467,12 @@ modern(){
   const stageTop=M("#24304F",{roughness:.35,metalness:.2}),fascia=M("#7A4128",{roughness:.6});
   box(17,.9,4.6,stageTop,0,.45,-10.9);box(17,.86,.06,fascia,0,.44,-8.58);
   for(let i=-3;i<=3;i++)box(1.6,.14,.4,M("#3A2A22"),i*2.4,.07,-8.2);
-  glowSprite(0,1,-10.4,9,.18);
-  // big LED screen with a verse
-  const screen=tex(1024,280,(g,w,h)=>{g.fillStyle="#080A18";g.fillRect(0,0,w,h);
-    for(const[x0,x1]of[[0,330],[694,1024]]){for(let i=0;i<70;i++){const x=x0+Math.random()*(x1-x0),y=Math.random()*h,r=10+Math.random()*60;const gr=g.createRadialGradient(x,y,0,x,y,r);const c=Math.random()<.5?"255,120,80":"140,90,220";gr.addColorStop(0,"rgba("+c+",.35)");gr.addColorStop(1,"rgba("+c+",0)");g.fillStyle=gr;g.fillRect(x-r,y-r,2*r,2*r)}}
-    g.fillStyle="#0E1E5A";g.fillRect(344,0,336,h);g.strokeStyle="rgba(150,180,255,.45)";g.lineWidth=2;for(let i=0;i<14;i++){g.beginPath();g.moveTo(344+Math.random()*336,0);g.lineTo(344+Math.random()*336,h);g.stroke()}
-    for(let i=0;i<120;i++){g.fillStyle="rgba(255,255,255,"+Math.random()*.8+")";g.fillRect(Math.random()*w,Math.random()*h,1.5,1.5)}
-    g.fillStyle="#fff";g.textAlign="center";g.font="600 30px Georgia,serif";g.fillText("The LORD is my shepherd;",512,118);g.fillText("I shall not want.",512,158);g.font="18px sans-serif";g.fillStyle="#BFD0FF";g.fillText("PSALM 23:1",512,200);
-    g.font="600 30px Georgia,serif";g.fillStyle="rgba(255,255,255,.9)";g.fillText("Welcome home",165,150);g.fillText("Welcome home",859,150)});
-  box(14.4,4.1,.2,M("#020203"),0,7.4,-12.95);add(new THREE.Mesh(new THREE.PlaneGeometry(14,3.8),new THREE.MeshBasicMaterial({map:screen})),0,7.4,-12.83);
-  // glowing geometric set pieces
-  const facets=()=>tex(128,256,(g,w,h)=>{g.fillStyle="#0B1030";g.fillRect(0,0,w,h);const C=["#3A55D9","#6D4BD8","#2F8BE6","#E0785A","#9B6BE8","#1E2E8C"];
-    for(let i=0;i<26;i++){g.fillStyle=C[i%C.length];g.globalAlpha=.55+Math.random()*.45;g.beginPath();for(let k=0;k<3;k++)g.lineTo(Math.random()*w,Math.random()*h);g.fill()}g.globalAlpha=1;
-    g.strokeStyle="#D9E2FF";g.lineWidth=3;for(let i=0;i<9;i++){g.beginPath();g.moveTo(Math.random()*w,Math.random()*h);g.lineTo(Math.random()*w,Math.random()*h);g.stroke()}g.lineWidth=6;g.strokeRect(0,0,w,h)});
-  const shardDefs=[[-7.4,3.4,1.3,.35],[-6.1,4.2,1.1,-.25],[-4.9,2.8,1.2,.2],[-2.2,3.2,.9,.4],[2.4,3.6,1.1,-.3],[3.7,4.4,1.2,.15],[5.1,3,1,-.35],[6.4,3.9,1.2,.3],[7.6,2.9,.9,-.2]];
-  for(const[x,h,w,ry]of shardDefs){const m=add(new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:facets(),side:THREE.DoubleSide})),x,.9+h/2,-12.1+Math.abs(ry));m.rotation.y=ry;m.rotation.z=ry*.15;box(w*.9,.15,.5,M("#0C0C10"),x,.97,-12.1+Math.abs(ry))}
-  // truss towers and hanging light bars
-  const truss=new THREE.MeshBasicMaterial({color:"#8A8F9C",wireframe:true});
-  for(const x of[-5.5,-1,1,5.5])box(.35,6,.35,truss,x,3.9,-12.3);
-  for(let i=0;i<12;i++)box(.04,.9+Math.random()*1.2,.04,B("#DDE6FF"),-7.5+i*1.36,8.9,-9-Math.random()*3);
-  const sp=[];for(let i=0;i<260;i++)sp.push(-9.5+Math.random()*19,5.4+Math.random()*4.5,-12.9+Math.random()*.05);
-  const sg=new THREE.BufferGeometry();sg.setAttribute("position",new THREE.Float32BufferAttribute(sp,3));G.add(new THREE.Points(sg,new THREE.PointsMaterial({color:"#FFFFFF",size:.05})));
-  // band
-  const black=M("#141418",{roughness:.4,metalness:.3}),chrome=M("#C9CCD4",{metalness:.9,roughness:.2}),brass=M("#C9A24A",{metalness:.8,roughness:.25});
-  box(3,.4,2.2,M("#1B1B22"),5,1.1,-11.4);
-  const kick=cyl(.4,.4,.45,M("#1E2A5A"),5,1.72,-11.6,20);kick.rotation.x=Math.PI/2;
-  for(const[dx,dz,r]of[[-.7,.2,.22],[.7,.2,.25],[-.3,-.2,.18],[.3,-.2,.18]])cyl(r,r,.25,M("#1E2A5A"),5+dx,1.75,-11.4+dz,16);
-  for(const[dx,dz,y]of[[-1.1,-.3,2.5],[1.2,-.4,2.6],[0,-.8,2.7]]){cyl(.012,.012,y-1.3,chrome,5+dx,(y+1.3)/2,-11.4+dz,6);cyl(.38,.38,.015,brass,5+dx,y,-11.4+dz,20)}
-  for(const s of[-1,1]){const l=box(.05,.9,.05,chrome,-3.6+s*.35,1.35,-10.9);l.rotation.z=s*.35}box(1.4,.1,.38,black,-3.6,1.85,-10.9);box(1.3,.02,.14,M("#F2F2F2"),-3.6,1.91,-10.82);
-  const gtr=M("#B5652E",{roughness:.4});for(const gx of[-5.2,-1.9]){add(new THREE.Mesh(new THREE.SphereGeometry(.22,14,10),gtr),gx,1.35,-11.2).scale.set(1,1.15,.3);add(new THREE.Mesh(new THREE.SphereGeometry(.17,14,10),gtr),gx,1.65,-11.2).scale.set(1,1,.3);box(.06,.75,.04,M("#3A2416"),gx,2.1,-11.2);cyl(.01,.01,.5,chrome,gx,1.15,-11.05,6)}
-  for(const x of[-2.8,-.6,2.6]){cyl(.012,.012,1.6,chrome,x,1.7,-10.2,6);add(new THREE.Mesh(new THREE.SphereGeometry(.05,8,6),black),x,2.5,-10.2)}
-  for(const x of[-4,-1.5,1.5,4]){const wdg=box(.7,.35,.5,black,x,1.08,-9),q=wdg;q.rotation.x=-.4}
-  // clear acrylic pulpit and side table
-  const acr=new THREE.MeshStandardMaterial({color:"#D6E6FF",transparent:true,opacity:.35,roughness:.05,metalness:.1});
-  cyl(.05,.12,1.15,acr,-.4,1.48,-9.6,10);const top=box(.75,.04,.5,acr,-.4,2.1,-9.6);top.rotation.x=.3;
-  cyl(.03,.03,.75,chrome,.8,1.28,-9.5,8);cyl(.25,.25,.03,acr,.8,1.66,-9.5,20);
-  // stage lighting with sweeping beams
-  const sl=new THREE.SpotLight("#CFDBFF",2.2,30,.55,.6,1.2);sl.position.set(0,9.5,-4);sl.target.position.set(0,.9,-10.5);G.add(sl);G.add(sl.target);
-  const sl2=new THREE.SpotLight("#6C7BFF",1.4,30,.6,.7,1.2);sl2.position.set(-6,9,-6);sl2.target.position.set(2,.9,-11);G.add(sl2);G.add(sl2.target);
-  sweeps.push({light:sl2,base:1.4,sp:.8,ph:0});
-  for(const[x,c,rz,ph]of[[-6,"#7D8BFF",.35,0],[-2.5,"#C9D4FF",.15,1.4],[2.5,"#C9D4FF",-.15,2.6],[6,"#9A7BFF",-.35,3.7]]){
-    const g=new THREE.Group();g.position.set(x,9.6,-11.6);const cone=new THREE.Mesh(new THREE.ConeGeometry(1.1,9,24,1,true),new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:.07,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));cone.position.y=-4.5;g.add(cone);G.add(g);sweeps.push({g,rz,sp:.35+Math.random()*.2,ph})}
+  // a single cross in the middle of the stage, softly lit
+  const crossM=M("#F4EFE6",{roughness:.45});
+  box(.42,5.6,.3,crossM,0,.9+2.8,-11.6);box(3,.42,.3,crossM,0,.9+3.95,-11.6);
+  box(1.4,.18,.9,M("#2A2F3E",{roughness:.5}),0,.99,-11.6);
+  const crossLight=new THREE.SpotLight("#FFF3E0",2.4,22,.32,.6,1.2);crossLight.position.set(0,8.5,-5.5);crossLight.target.position.set(0,3.6,-11.6);G.add(crossLight);G.add(crossLight.target);
+  const backWash=new THREE.PointLight("#E8DCCB",.6,9,1.6);backWash.position.set(0,4,-12.2);G.add(backWash);
   // curved theatre seating
   const C={x:0,z:-13.5},seatGeo=new THREE.BoxGeometry(.5,.09,.46),backGeo=new THREE.BoxGeometry(.5,.62,.08),spots=[];
   for(let r=7;r<=22;r+=1.15){const step=.64/r;for(let a=-1.2;a<=1.2;a+=step){const x=C.x+Math.sin(a)*r,z=C.z+Math.cos(a)*r;if(z>8.6||z<-7.4||Math.abs(x)>8.7)continue;if(Math.abs(x)<.55||(Math.abs(x)>3.2&&Math.abs(x)<3.95))continue;spots.push([x,z,Math.atan2(x-C.x,z-C.z)])}}
@@ -586,13 +551,7 @@ temple(){
     sideWin:{shape:new THREE.Shape([new THREE.Vector2(-1.5,0),new THREE.Vector2(1.5,0),new THREE.Vector2(1.5,2.6),new THREE.Vector2(-1.5,2.6)]),map:lattice(),y:2.1}});
   SEATS=[];{const edge=M("#3E3B37",{roughness:.95}),top=M("#5F5B55",{roughness:1});for(let r=0;r<6;r++)for(let c=0;c<8;c++){const x=-6.65+c*1.9,z=-7+r*2.15;box(1.3,.1,1.3,edge,x,.05,z);box(1.12,.08,1.12,top,x,.12,z);SEATS.push({x,z})}}
   box(7,.35,3,M("#9B8F7E"),0,.175,-11.2);box(5,.5,2.2,M("#7A2E1F",{roughness:.5}),0,.6,-11.4);
-  const gold=M("#D4A63A",{metalness:.8,roughness:.3});
-  for(let i=0;i<10;i++){const p=add(new THREE.Mesh(new THREE.SphereGeometry(.35,10,8),gold),Math.cos(i/10*Math.PI*2)*1,1.0,-11.4+Math.sin(i/10*Math.PI*2)*.6);p.scale.set(1,.5,1.4)}
-  const body=add(new THREE.Mesh(new THREE.SphereGeometry(1,24,18),gold),0,1.75,-11.5);body.scale.set(1.15,.85,.75);
-  const torso=add(new THREE.Mesh(new THREE.CylinderGeometry(.5,.75,1.4,24),gold),0,2.75,-11.5);
-  add(new THREE.Mesh(new THREE.SphereGeometry(.5,24,18),gold),0,3.8,-11.45);add(new THREE.Mesh(new THREE.SphereGeometry(.2,12,10),gold),0,4.3,-11.45);
-  const halo=add(new THREE.Mesh(new THREE.TorusGeometry(1.1,.06,8,40),gold),0,3.7,-11.9);
-  glowSprite(0,3,-12,6,.3);
+  buildBuddha();
   const mural=tex(768,512,(g,w,h)=>{const r=g.createLinearGradient(0,0,0,h);r.addColorStop(0,"#5A1F14");r.addColorStop(.5,"#8C3A1E");r.addColorStop(1,"#4A1810");g.fillStyle=r;g.fillRect(0,0,w,h);
     const R=g.createRadialGradient(w/2,h*.42,20,w/2,h*.42,h*.62);R.addColorStop(0,"rgba(255,214,120,.85)");R.addColorStop(.45,"rgba(214,150,60,.45)");R.addColorStop(1,"rgba(120,50,20,0)");g.fillStyle=R;g.fillRect(0,0,w,h);
     g.strokeStyle="rgba(255,220,140,.55)";g.lineWidth=3;for(let i=0;i<14;i++){g.beginPath();g.arc(w/2,h*.42,60+i*22,0,Math.PI*2);g.stroke()}
@@ -659,6 +618,63 @@ chapel(){
   const f=glowSprite(0,2.35,-11.3,1.3,1);f.scale.set(1.1,1.6,1);flickers.push({s:f,b:[1.1,1.6]});glowSprite(0,2.4,-11.3,5,.35);
   hangingLamps("#FFC071",[[-4,-3],[4,-3],[-4,3],[4,3]],6)}
 };
+
+/* ---------- seated Buddha for the temple ---------- */
+function buildBuddha(){
+  const B=new THREE.Group();B.position.set(0,.85,-11.45);G.add(B);
+  const gold=M("#D9AE45",{metalness:.55,roughness:.32,emissive:"#3A2607",emissiveIntensity:.55});
+  const goldDeep=M("#B98A2E",{metalness:.55,roughness:.4,emissive:"#2A1A05",emissiveIntensity:.5});
+  const robe=M("#E2B74E",{metalness:.5,roughness:.38,emissive:"#3A2607",emissiveIntensity:.5});
+  const petalM=M("#C9645A",{roughness:.5,emissive:"#2A0A06",emissiveIntensity:.4});
+  const S_=(r,ws,hs)=>new THREE.SphereGeometry(r,ws||24,hs||18);
+  // lotus throne
+  cyl(1.25,1.35,.32,goldDeep,0,.16,0,40,B);
+  for(const[ring,n,rad,y,tilt]of[[0,16,1.28,.2,.95],[1,16,1.12,.36,.75]])for(let k=0;k<n;k++){const a=(k+(ring?.5:0))/n*Math.PI*2;
+    const pt=add(new THREE.Mesh(S_(.22,12,10),ring?gold:petalM),Math.sin(a)*rad,y,Math.cos(a)*rad*.85,B);pt.scale.set(.75,1.35,.35);pt.rotation.y=a;pt.rotation.x=tilt}
+  // crossed legs and soles
+  const legs=add(new THREE.Mesh(S_(1)),0,.62,.12,B);legs.scale.set(1.18,.36,.72);legs.material=robe;
+  for(const s of[-1,1]){const knee=add(new THREE.Mesh(S_(.34),robe),s*.95,.6,.32,B);knee.scale.set(1,.85,1.1);
+    const sole=add(new THREE.Mesh(S_(.15),gold),s*.42,.86,.42,B);sole.scale.set(1.5,.55,.9);sole.rotation.z=s*.35}
+  // body: a lathe gives the robed torso its shape
+  const prof=[[0,0],[.66,0],[.7,.18],[.66,.45],[.6,.75],[.62,.98],[.58,1.14],[.36,1.24],[.2,1.28],[0,1.29]].map(([x,y])=>new THREE.Vector2(x,y));
+  const torso=add(new THREE.Mesh(new THREE.LatheGeometry(prof,36),robe),0,.72,0,B);torso.scale.set(1,1,.72);
+  const sash=add(new THREE.Mesh(new THREE.TorusGeometry(.62,.07,8,30,Math.PI*1.05),goldDeep),.05,1.45,.06,B);sash.rotation.set(0,0,-.95);sash.scale.set(1,1.15,.8);
+  const chest=add(new THREE.Mesh(S_(.3),gold),-.2,1.62,.27,B);chest.scale.set(1,.7,.4);
+  // arms resting down to hands in the lap (meditation mudra)
+  const limb=(a,b,r,mat)=>{const d=new THREE.Vector3().subVectors(b,a),L=d.length();const m=new THREE.Mesh(new THREE.CylinderGeometry(r*.85,r,L,14),mat);
+    m.position.copy(a).addScaledVector(d,.5);m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),d.normalize());B.add(m);
+    const j=new THREE.Mesh(S_(r*.98,12,10),mat);j.position.copy(b);B.add(j)};
+  for(const s of[-1,1]){const sh=new THREE.Vector3(s*.66,1.86,0),el=new THREE.Vector3(s*.82,1.18,.12),wr=new THREE.Vector3(s*.26,.9,.46);
+    const shoulder=new THREE.Mesh(S_(.22),robe);shoulder.position.copy(sh);B.add(shoulder);limb(sh,el,.19,robe);limb(el,wr,.14,s<0?robe:gold)}
+  const handL=add(new THREE.Mesh(S_(.2),gold),0,.92,.48,B);handL.scale.set(1.5,.4,.85);const handR=add(new THREE.Mesh(S_(.19),gold),0,.98,.5,B);handR.scale.set(1.45,.35,.8);
+  for(const s of[-1,1])add(new THREE.Mesh(S_(.06,10,8),gold),s*.05,1.06,.52,B);
+  // neck and head
+  cyl(.17,.2,.28,gold,0,2.08,0,20,B);
+  const face=tex(512,256,(g,w,h)=>{g.fillStyle="#D9AE45";g.fillRect(0,0,w,h);const cx=w*.25;
+    g.strokeStyle="#6B4A12";g.lineCap="round";g.lineWidth=4;
+    for(const s of[-1,1]){g.beginPath();g.arc(cx+s*26,h*.47,17,Math.PI*.12,Math.PI*.88);g.stroke();
+      g.lineWidth=3;g.beginPath();g.arc(cx+s*26,h*.43,24,Math.PI*1.18,Math.PI*1.82);g.stroke();g.lineWidth=4}
+    g.beginPath();g.moveTo(cx,h*.46);g.lineTo(cx-4,h*.58);g.lineTo(cx+5,h*.6);g.stroke();
+    g.beginPath();g.arc(cx,h*.6,13,Math.PI*.2,Math.PI*.8);g.stroke();
+    g.fillStyle="#7A5212";g.beginPath();g.arc(cx,h*.385,4.5,0,Math.PI*2);g.fill()});
+  const headM=new THREE.MeshStandardMaterial({map:face,metalness:.45,roughness:.38,emissive:"#3A2607",emissiveIntensity:.5});
+  const head=add(new THREE.Mesh(S_(.42,40,30),headM),0,2.5,.02,B);head.scale.set(.95,1.12,.98);
+  for(const s of[-1,1]){const ear=add(new THREE.Mesh(S_(.09,12,10),gold),s*.4,2.36,-.02,B);ear.scale.set(.6,2.6,1)}
+  // curled hair over the crown, and the ushnisha
+  const curl=new THREE.SphereGeometry(.048,8,6),hair=M("#3B4A6B",{roughness:.6,metalness:.2});
+  for(let ring=0;ring<6;ring++){const el=.25+ring*.21,n=Math.round(30*Math.cos(el));for(let k=0;k<n;k++){const az=(k+(ring%2)*.5)/n*Math.PI*2;
+    if(ring<2&&Math.cos(az)>.55)continue;
+    const r=.43;const x=Math.sin(az)*Math.cos(el)*r*.95,y=Math.sin(el)*r*1.12,z=Math.cos(az)*Math.cos(el)*r*.98;add(new THREE.Mesh(curl,hair),x,2.5+y,.02+z,B)}}
+  const ush=add(new THREE.Mesh(S_(.2),hair),0,2.98,0,B);ush.scale.set(1,.85,1);
+  for(let k=0;k<14;k++){const a=k/14*Math.PI*2;add(new THREE.Mesh(curl,hair),Math.sin(a)*.17,2.95+(k%2)*.06,Math.cos(a)*.17,B)}
+  add(new THREE.Mesh(S_(.06,10,8),gold),0,3.15,0,B);
+  // halo and mandorla behind
+  const halo=add(new THREE.Mesh(new THREE.TorusGeometry(.72,.05,10,50),gold),0,2.55,-.45,B);
+  const disc=add(new THREE.Mesh(new THREE.CircleGeometry(.7,48),new THREE.MeshBasicMaterial({color:"#F3C766",transparent:true,opacity:.35})),0,2.55,-.47,B);
+  const mand=add(new THREE.Mesh(new THREE.TorusGeometry(1.45,.05,10,60,Math.PI*1.25),goldDeep),0,1.55,-.55,B);mand.rotation.z=-Math.PI*.125;mand.scale.set(1,1.35,1);
+  glowSprite(0,2.5,-.5,3.2,.35,B);glowSprite(0,1.4,-.6,5.5,.22,B);
+  const spot=new THREE.PointLight("#FFD08A",1.3,7,1.6);spot.position.set(0,3.2,1.8);B.add(spot);
+  B.scale.setScalar(1.08)}
 
 /* ---------- avatars ---------- */
 function makeAvatar(robe,skin,isMe){
