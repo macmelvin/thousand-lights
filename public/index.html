@@ -138,6 +138,9 @@ textarea:focus{outline:2px solid var(--wax);outline-offset:1px}
 .card{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 14px}
 .card.focus{border-color:var(--wax);box-shadow:0 0 0 2px var(--wax-soft)}
 .card p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+.verse{grid-column:1/-1;margin:2px 0 0;border-left:3px solid var(--wax);padding:4px 0 4px 12px;font-family:var(--display);font-size:1rem;line-height:1.5;color:var(--ink)}
+.verse cite{display:block;font-family:var(--body);font-style:normal;font-size:.72rem;font-weight:700;color:var(--wax-ink);text-transform:uppercase;letter-spacing:.07em;margin-top:3px}
+.verse.wait{font-family:var(--body);font-size:.82rem;font-style:italic;color:var(--muted);border-left-color:var(--line)}
 .meta{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:4px 12px;font-size:.78rem;color:var(--muted);align-items:center}
 .pill{border:1px solid var(--line);border-radius:999px;padding:0 8px}
 .del{background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;font-size:.78rem;padding:0}
@@ -343,7 +346,10 @@ function renderWall(){
       const d=document.createElement("button");d.type="button";d.className="del";d.textContent=S.confirmDel===p.id?"Tap again to remove":"Remove";
       d.onclick=()=>{if(S.confirmDel===p.id){S.confirmDel=null;removePrayer(p.id)}else{S.confirmDel=p.id;renderWall();setTimeout(()=>{if(S.confirmDel===p.id){S.confirmDel=null;renderWall()}},4000)}};
       meta.append(d)}
-    card.append(t,b,meta);return card}))}
+    const vs=document.createElement("blockquote");vs.className="verse";
+    if(p.verse){vs.textContent=p.verse.text;const ci=document.createElement("cite");ci.textContent=p.verse.ref;vs.append(ci)}
+    else if(S.companion&&Date.now()-(p.createdAt||0)<90000){vs.classList.add("wait");vs.textContent="Finding a verse for this prayer…"}
+    card.append(t,b);if(p.verse||vs.classList.contains("wait"))card.append(vs);card.append(meta);return card}))}
 async function togglePray(pid,lit){try{const r=await api("/api/prayers/"+pid+"/amen",{method:lit?"DELETE":"POST"});if(r.status===429){toast("Please slow down a little and try again shortly.");return}if(!r.ok)throw 0;const j=await r.json();const p=S.prayers.find(x=>x.id===pid);if(p){p.count=j.count;p.mine=j.mine}renderWall();syncOrbs();if(!lit)bowOnce(true)}catch(e){toast("That didn't save. Check your connection and try again.")}}
 async function removePrayer(pid){try{const r=await api("/api/prayers/"+pid,{method:"DELETE"});if(r.status===403){toast("Only the person who posted this prayer can remove it.");return}if(!r.ok)throw 0;S.prayers=S.prayers.filter(p=>p.id!==pid);renderWall();syncOrbs()}catch(e){toast("Couldn't remove that prayer. Try again in a moment.")}}
 function upsertPrayer(p){const i=S.prayers.findIndex(x=>x.id===p.id);if(i>=0)S.prayers[i]=Object.assign({},S.prayers[i],p,{isMine:S.prayers[i].isMine||!!p.isMine,mine:S.prayers[i].mine||!!p.mine});else S.prayers.unshift(p);renderWall();syncOrbs()}
@@ -821,6 +827,7 @@ function connectWS(){
     else if(m.t==="prayer")upsertPrayer(m.prayer);
     else if(m.t==="removed"){S.prayers=S.prayers.filter(p=>p.id!==m.id);renderWall();syncOrbs()}
     else if(m.t==="offer"){if(m.hall==="temple"){S.offerings[m.item]={n:m.n,lastAt:m.lastAt};if(m.item==="incense")S.incenseTimes.push(Date.now());updateOfferings();renderOffers()}}
+    else if(m.t==="verse"){const p=S.prayers.find(x=>x.id===m.id);if(p){p.verse=m.verse;renderWall()}}
     else if(m.t==="amen"){const p=S.prayers.find(x=>x.id===m.id);if(p){p.count=m.count;renderWall();syncOrbs()}}};
   WS.onclose=()=>{wsReady=false;peersMap.clear();renderPeers();setTimeout(connectWS,2000+Math.random()*3000)}}
 function syncPeers(list){

@@ -22,4 +22,5 @@ npm start            # http://localhost:3000
 
 - Up to 5 prayers per device per 10 minutes (15 per IP).
 - Up to 8 companion replies per device per hour (20 per IP), to keep AI costs predictable.
+- Each prayer gets one short public verse from its tradition, shown on the wall (needs an AI key; older prayers are filled in on startup). The fuller companion reply stays private to the person who prayed.
 - Prayers are anonymous; people can remove only their own (tracked by a random device id in their browser).

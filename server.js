@@ -37,10 +37,13 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS offerings (
     hall TEXT NOT NULL, item TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 0, last_at INTEGER, PRIMARY KEY (hall, item));
 `);
+try { db.exec("ALTER TABLE prayers ADD COLUMN verse TEXT"); } catch { /* column already there */ }
 const q = {
-  list: db.prepare(`SELECT p.id, p.text, p.category, p.tradition, p.created_at AS createdAt, p.author,
+  list: db.prepare(`SELECT p.id, p.text, p.category, p.tradition, p.created_at AS createdAt, p.author, p.verse,
       (SELECT COUNT(*) FROM amens a WHERE a.pid = p.id) AS count
     FROM prayers p ORDER BY p.created_at DESC LIMIT 400`),
+  setVerse: db.prepare(`UPDATE prayers SET verse = ? WHERE id = ?`),
+  needVerse: db.prepare(`SELECT id, text, tradition FROM prayers WHERE verse IS NULL ORDER BY created_at DESC LIMIT 60`),
   minePrayed: db.prepare(`SELECT pid FROM amens WHERE device = ?`),
   insert: db.prepare(`INSERT INTO prayers (id, text, category, tradition, author, created_at) VALUES (?, ?, ?, ?, ?, ?)`),
   get: db.prepare(`SELECT * FROM prayers WHERE id = ?`),
@@ -94,7 +97,7 @@ function readJson(req, max = 8192) {
 }
 const publicPrayer = (p, device, minePrayed) => ({
   id: p.id, text: p.text, category: p.category, tradition: p.tradition, createdAt: p.createdAt ?? p.created_at,
-  count: p.count ?? 0, mine: minePrayed ? minePrayed.has(p.id) : false, isMine: !!device && p.author === device,
+  verse: parseVerse(p.verse), count: p.count ?? 0, mine: minePrayed ? minePrayed.has(p.id) : false, isMine: !!device && p.author === device,
 });
 
 /* ---------------- companion ---------------- */
@@ -120,6 +123,36 @@ async function* sseLines(body) {
     let i; while ((i = buf.indexOf("\n")) >= 0) { const line = buf.slice(0, i).trim(); buf = buf.slice(i + 1); if (line.startsWith("data:")) yield line.slice(5).trim(); }
   }
 }
+/* ---------- one public verse per prayer, shown on the wall ---------- */
+function parseVerse(v) { if (!v) return null; try { const o = JSON.parse(v); return o && o.ref && o.text ? o : null; } catch { return null; } }
+function versePrompt(text, faithName) {
+  const f = FAITHS[faithName] || FAITHS["Open to all"];
+  return `Choose one short passage from ${f.scripture} that would comfort or encourage someone who wrote this prayer request:
+"""${text.slice(0, 600)}"""
+
+Reply with exactly one line and nothing else, in this format:
+REFERENCE | PASSAGE
+REFERENCE is the source and its location (for example "Psalm 23:1" or "Dhammapada 5"). PASSAGE is at most 30 words, quoted from a public-domain translation where one exists. If you are not certain of the exact wording, paraphrase faithfully and end the reference with " (paraphrase)". Never invent a reference. Never speak as God.`;
+}
+async function makeVerse(id, text, faith) {
+  if (!(ANTHROPIC_API_KEY || OPENAI_API_KEY)) return;
+  let out = "";
+  try { await streamCompanion(versePrompt(text, faith), (t) => (out += t), AbortSignal.timeout(30000)); }
+  catch (e) { console.error("verse error", e.message); return; }
+  const line = out.trim().split("\n").map((l) => l.trim()).find((l) => l.includes("|")) || "";
+  const m = line.replace(/^["'*\s]+|["'*\s]+$/g, "").match(/^(.{2,80}?)\s*\|\s*(.{4,260})$/);
+  if (!m) { console.error("verse unparsed:", out.slice(0, 160)); return; }
+  const verse = { ref: m[1].trim().slice(0, 80), text: m[2].trim().replace(/^["“]|["”]$/g, "").slice(0, 260) };
+  if (!q.get.get(id)) return;
+  q.setVerse.run(JSON.stringify(verse), id);
+  broadcast({ t: "verse", id, verse });
+}
+// give older prayers a verse once a key is set, gently, one at a time
+async function backfillVerses() {
+  if (!(ANTHROPIC_API_KEY || OPENAI_API_KEY)) return;
+  for (const r of q.needVerse.all()) { await makeVerse(r.id, r.text, r.tradition); await new Promise((ok) => setTimeout(ok, 1500)); }
+}
+
 async function streamCompanion(prompt, onText, signal) {
   if (ANTHROPIC_API_KEY) {
     const r = await fetch((process.env.ANTHROPIC_BASE_URL || "https://api.anthropic.com") + "/v1/messages", {
@@ -192,8 +225,9 @@ const server = http.createServer(async (req, res) => {
       const id = crypto.randomUUID();
       const createdAt = Date.now();
       q.insert.run(id, text, category, tradition, device, createdAt);
-      const prayer = { id, text, category, tradition, createdAt, count: 0, mine: false };
+      const prayer = { id, text, category, tradition, createdAt, verse: null, count: 0, mine: false };
       broadcast({ t: "prayer", prayer });
+      makeVerse(id, text, tradition);
       return send(res, 201, { prayer: Object.assign({ isMine: true }, prayer) });
     }
 
@@ -302,5 +336,5 @@ function countHall(h) { let n = 0; for (const c of wss.clients) if (c.hall === h
 setInterval(() => { for (const c of wss.clients) c.msgs = 0; }, 1000).unref();
 setInterval(() => { for (const c of wss.clients) { if (!c.alive) { c.terminate(); continue; } c.alive = false; try { c.ping(); } catch {} } }, 30000).unref();
 
-server.listen(PORT, () => console.log(`Thousand Lights listening on ${PORT} (companion: ${ANTHROPIC_API_KEY ? "anthropic " + ANTHROPIC_MODEL : OPENAI_API_KEY ? "openai " + OPENAI_MODEL : "off"})`));
+server.listen(PORT, () => { setTimeout(backfillVerses, 4000); console.log(`Thousand Lights listening on ${PORT} (companion: ${ANTHROPIC_API_KEY ? "anthropic " + ANTHROPIC_MODEL : OPENAI_API_KEY ? "openai " + OPENAI_MODEL : "off"})`); });
 for (const sig of ["SIGTERM", "SIGINT"]) process.on(sig, () => { server.close(); db.close(); process.exit(0); });
