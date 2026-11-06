@@ -87,7 +87,7 @@ function send(res, status, body, headers) {
   res.writeHead(status, Object.assign({ "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" }, headers || {}));
   res.end(JSON.stringify(body));
 }
-function readJson(req, max = 8192) {
+function readJson(req, max = 24576) {
   return new Promise((resolve, reject) => {
     let size = 0; const chunks = [];
     req.on("data", (c) => { size += c.length; if (size > max) { reject(new Error("too_large")); req.destroy(); } else chunks.push(c); });
@@ -106,7 +106,7 @@ function companionPrompt(text, faithName, cat) {
   return `You are a gentle prayer companion inside an app called Thousand Lights. You are not God and must never speak as God, in God's voice, or claim divine authority or knowledge of God's will. You are not a ${f.clergy} either, and you never issue religious rulings.
 
 The person is ${faithName === "Open to all" ? "of any or no particular faith" : faithName} and is praying in the app's ${f.place.toLowerCase()}. Their request (category: ${cat}) is:
-"""${text.slice(0, 600)}"""
+"""${text.slice(0, 2000)}"""
 
 Reply in plain text with no markdown. Use exactly these labelled parts, each label starting its own line:
 Scripture: one or two short passages from ${f.scripture} that speak to this. Quote only short lines and cite accurately; if you are not sure of the exact wording or reference, paraphrase and say it is a paraphrase.
@@ -128,7 +128,7 @@ function parseVerse(v) { if (!v) return null; try { const o = JSON.parse(v); ret
 function versePrompt(text, faithName) {
   const f = FAITHS[faithName] || FAITHS["Open to all"];
   return `Choose one short passage from ${f.scripture} that would comfort or encourage someone who wrote this prayer request:
-"""${text.slice(0, 600)}"""
+"""${text.slice(0, 2000)}"""
 
 Reply with exactly one line and nothing else, in this format:
 REFERENCE | PASSAGE
@@ -218,7 +218,7 @@ const server = http.createServer(async (req, res) => {
       const device = deviceOf(req); if (!device) return send(res, 400, { error: "device" });
       if (limited("post:" + device, 5, 600e3) || limited("postip:" + ipOf(req), 15, 600e3)) return send(res, 429, { error: "slow_down" });
       const b = await readJson(req);
-      const text = typeof b.text === "string" ? b.text.trim().slice(0, 600) : "";
+      const text = typeof b.text === "string" ? b.text.trim().slice(0, 2000) : "";
       if (!text) return send(res, 400, { error: "empty" });
       const category = CATS.includes(b.category) ? b.category : "Other";
       const tradition = FAITHS[b.tradition] ? b.tradition : "Open to all";
@@ -273,7 +273,7 @@ const server = http.createServer(async (req, res) => {
       const device = deviceOf(req) || "anon";
       if (limited("ai:" + device, 8, 3600e3) || limited("aiip:" + ipOf(req), 20, 3600e3)) return send(res, 429, { error: "slow_down" });
       const b = await readJson(req);
-      const text = typeof b.text === "string" ? b.text.trim().slice(0, 600) : "";
+      const text = typeof b.text === "string" ? b.text.trim().slice(0, 2000) : "";
       if (!text) return send(res, 400, { error: "empty" });
       const faith = FAITHS[b.faith] ? b.faith : "Open to all";
       const cat = CATS.includes(b.category) ? b.category : "Other";

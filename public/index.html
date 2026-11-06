@@ -138,13 +138,16 @@ textarea:focus{outline:2px solid var(--wax);outline-offset:1px}
 .card{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 14px}
 .card.focus{border-color:var(--wax);box-shadow:0 0 0 2px var(--wax-soft)}
 .card p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+.card p.clamp{display:-webkit-box;-webkit-line-clamp:8;-webkit-box-orient:vertical;overflow:hidden}
+.more{grid-column:1/-1;justify-self:start;background:none;border:0;padding:0;color:var(--wax-ink);font-weight:700;font-size:.86rem;cursor:pointer;text-decoration:underline}
+.more:focus-visible{outline:2px solid var(--wax);outline-offset:2px}
 .verse{grid-column:1/-1;margin:2px 0 0;border-left:3px solid var(--wax);padding:4px 0 4px 12px;font-family:var(--display);font-size:1rem;line-height:1.5;color:var(--ink)}
 .verse cite{display:block;font-family:var(--body);font-style:normal;font-size:.72rem;font-weight:700;color:var(--wax-ink);text-transform:uppercase;letter-spacing:.07em;margin-top:3px}
 .verse.wait{font-family:var(--body);font-size:.82rem;font-style:italic;color:var(--muted);border-left-color:var(--line)}
 .meta{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:4px 12px;font-size:.78rem;color:var(--muted);align-items:center}
 .pill{border:1px solid var(--line);border-radius:999px;padding:0 8px}
 .del{background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;font-size:.78rem;padding:0}
-.pray{grid-row:1;grid-column:2;display:flex;flex-direction:column;align-items:center;gap:1px;background:transparent;border:1px solid var(--line);border-radius:10px;padding:6px 8px;cursor:pointer;min-width:60px}
+.pray{grid-row:1;grid-column:2;align-self:start;display:flex;flex-direction:column;align-items:center;gap:1px;background:transparent;border:1px solid var(--line);border-radius:10px;padding:6px 8px;cursor:pointer;min-width:60px}
 .pray .n{font-variant-numeric:tabular-nums;font-weight:700}
 .pray .w{font-size:.66rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 .pray[aria-pressed="true"]{border-color:var(--wax);background:var(--wax-soft)}
@@ -208,8 +211,8 @@ textarea:focus{outline:2px solid var(--wax);outline-offset:1px}
   <div class="sheet-body">
     <p class="sub" id="praySub" data-x="">Your prayer rises as a soft light in this hall. It stays anonymous.</p>
     <label class="lbl" for="prayer">Your prayer</label>
-    <textarea id="prayer" maxlength="600" placeholder="Please pray for my mum's surgery on Friday. I'm scared, and I don't know how to be strong for her."></textarea>
-    <span class="count" id="count">0 / 600</span>
+    <textarea id="prayer" maxlength="2000" placeholder="Please pray for my mum's surgery on Friday. I'm scared, and I don't know how to be strong for her."></textarea>
+    <span class="count" id="count">0 / 2000</span>
     <div class="chips" id="cats" role="group" aria-label="Category"></div>
     <div id="care" class="care" hidden>
       <strong>You don't have to carry this alone.</strong>
@@ -284,7 +287,7 @@ const SKIN=["#F2CDA6","#E0B08A","#B98258","#8A5A3B"];
 const REDUCED=matchMedia("(prefers-reduced-motion: reduce)").matches;
 const $=id=>document.getElementById(id);
 const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
-const S={offerings:{},incenseTimes:[],faith:store.get("lamp-faith")||store.get("lamp-trad")||"Christian",cat:"Health",filter:"All",scope:"here",prayers:[],amens:[],uid:null,db:null,lobby:null,hall:null,hallUnsub:null,canWrite:true,isOwner:false,sample:null,ctl:null,confirmDel:null,focusId:null};
+const S={openIds:new Set(),offerings:{},incenseTimes:[],faith:store.get("lamp-faith")||store.get("lamp-trad")||"Christian",cat:"Health",filter:"All",scope:"here",prayers:[],amens:[],uid:null,db:null,lobby:null,hall:null,hallUnsub:null,canWrite:true,isOwner:false,sample:null,ctl:null,confirmDel:null,focusId:null};
 if(!FAITHS[S.faith])S.faith="Christian";
 $("faith").value=S.faith;
 
@@ -317,7 +320,7 @@ function renderFilters(){
   $("filters").replaceChildren(...["All",...CATS].map(k=>chip(k,k===S.filter,()=>{S.filter=k;renderFilters();renderWall()})))}
 renderCats();
 const ta=$("prayer");
-ta.addEventListener("input",()=>{$("count").textContent=ta.value.length+" / 600";$("care").hidden=!CRISIS.test(ta.value)});
+ta.addEventListener("input",()=>{$("count").textContent=ta.value.length+" / 2000";$("care").hidden=!CRISIS.test(ta.value)});
 function note(msg){const n=$("postNote");n.textContent=msg;n.hidden=false}
 
 /* wall */
@@ -331,6 +334,7 @@ function renderWall(){
   wall.replaceChildren(...list.map(p=>{
     const card=document.createElement("article");card.className="card"+(S.focusId===p.id?" focus":"");card.id="c-"+p.id;
     const t=document.createElement("p");t.textContent=p.text;
+    const long=p.text.length>320||p.text.split("\n").length>8,open=S.openIds.has(p.id);if(long&&!open)t.className="clamp";
     const n=counts[p.id]||0,lit=mine.has(p.id);
     const b=document.createElement("button");b.type="button";b.className="pray";b.setAttribute("aria-pressed",lit?"true":"false");
     b.innerHTML='<span class="n"></span><span class="w"></span>';b.querySelector(".n").textContent=n;b.querySelector(".w").textContent=lit?"prayed":"I prayed";
@@ -349,7 +353,7 @@ function renderWall(){
     const vs=document.createElement("blockquote");vs.className="verse";
     if(p.verse){vs.textContent=p.verse.text;const ci=document.createElement("cite");ci.textContent=p.verse.ref;vs.append(ci)}
     else if(S.companion&&Date.now()-(p.createdAt||0)<90000){vs.classList.add("wait");vs.textContent="Finding a verse for this prayer…"}
-    card.append(t,b);if(p.verse||vs.classList.contains("wait"))card.append(vs);card.append(meta);return card}))}
+    card.append(t,b);if(long){const mb=document.createElement("button");mb.type="button";mb.className="more";mb.textContent=open?"Show less":"Read more";mb.setAttribute("aria-expanded",open?"true":"false");mb.onclick=()=>{open?S.openIds.delete(p.id):S.openIds.add(p.id);renderWall()};card.append(mb)}if(p.verse||vs.classList.contains("wait"))card.append(vs);card.append(meta);return card}))}
 async function togglePray(pid,lit){try{const r=await api("/api/prayers/"+pid+"/amen",{method:lit?"DELETE":"POST"});if(r.status===429){toast("Please slow down a little and try again shortly.");return}if(!r.ok)throw 0;const j=await r.json();const p=S.prayers.find(x=>x.id===pid);if(p){p.count=j.count;p.mine=j.mine}renderWall();syncOrbs();if(!lit)bowOnce(true)}catch(e){toast("That didn't save. Check your connection and try again.")}}
 async function removePrayer(pid){try{const r=await api("/api/prayers/"+pid,{method:"DELETE"});if(r.status===403){toast("Only the person who posted this prayer can remove it.");return}if(!r.ok)throw 0;S.prayers=S.prayers.filter(p=>p.id!==pid);renderWall();syncOrbs()}catch(e){toast("Couldn't remove that prayer. Try again in a moment.")}}
 function upsertPrayer(p){const i=S.prayers.findIndex(x=>x.id===p.id);if(i>=0)S.prayers[i]=Object.assign({},S.prayers[i],p,{isMine:S.prayers[i].isMine||!!p.isMine,mine:S.prayers[i].mine||!!p.mine});else S.prayers.unshift(p);renderWall();syncOrbs()}
@@ -361,7 +365,7 @@ $("postBtn").onclick=async()=>{
   try{const r=await api("/api/prayers",{method:"POST",body:{text,category:S.cat,tradition:S.faith}});
     if(r.status===429){note("You've lifted several prayers just now. Please wait a few minutes before posting another.");return}
     if(!r.ok)throw 0;const j=await r.json();upsertPrayer(j.prayer);
-    note("Your prayer has been lifted."+(S.companion?" The companion's reply is below.":""));ta.value="";$("count").textContent="0 / 600";sendRising();
+    note("Your prayer has been lifted."+(S.companion?" The companion's reply is below.":""));ta.value="";$("count").textContent="0 / 2000";sendRising();
     if(S.companion){askCompanion(text);setTimeout(()=>$("companion").scrollIntoView({block:"start",behavior:REDUCED?"auto":"smooth"}),80)}}
   catch(e){note("That didn't post. Check your connection and try again.")}
   finally{$("postBtn").disabled=false}};
